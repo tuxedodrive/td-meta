@@ -1,0 +1,944 @@
+# ABOUTME: Reusable workflow for automating GitHub Project board status transitions.
+# ABOUTME: Called by td-core, td-edge, td-training, td-fleet to move issues and PRs based on lifecycle.
+
+name: Backlog Automation (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      project_number:
+        description: 'GitHub Project number'
+        required: false
+        type: number
+        default: 1
+      org:
+        description: 'GitHub organization'
+        required: false
+        type: string
+        default: 'tuxedodrive'
+    secrets:
+      org_project_token:
+        description: 'GitHub token with project:write scope'
+        required: true
+
+env:
+  PROJECT_NUMBER: ${{ inputs.project_number }}
+  ORG: ${{ inputs.org }}
+  # Status field option IDs from the project
+  STATUS_IN_PROGRESS: "67697bf8"
+  STATUS_WAITING: "cf05b1f7"
+  STATUS_DONE: "bb28dca0"
+
+jobs:
+  # Move linked issues to "In Progress" when a branch is created and linked
+  branch-created:
+    # Skip for Dependabot - it can't access org secrets and doesn't need project tracking
+    if: github.event_name == 'create' && github.event.ref_type == 'branch' && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Move linked issues to In Progress
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.org_project_token }}
+          script: |
+            const branch = context.payload.ref;
+            console.log(`Branch created: ${branch}`);
+
+            // Find issues linked to this branch via the Development section
+            const linkedIssues = await findIssuesLinkedToBranch(github, context, branch);
+
+            for (const issue of linkedIssues) {
+              await moveIssueToStatus(github, issue, '${{ env.STATUS_IN_PROGRESS }}', '${{ env.ORG }}', ${{ env.PROJECT_NUMBER }});
+            }
+
+            async function findIssuesLinkedToBranch(github, context, branchName) {
+              // Query the repository for issues that have this branch linked
+              const query = `
+                query($owner: String!, $repo: String!) {
+                  repository(owner: $owner, name: $repo) {
+                    issues(first: 100, states: OPEN) {
+                      nodes {
+                        number
+                        id
+                        linkedBranches(first: 10) {
+                          nodes {
+                            ref {
+                              name
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
+
+              const result = await github.graphql(query, {
+                owner: context.repo.owner,
+                repo: context.repo.repo
+              });
+
+              const linkedIssues = [];
+              for (const issue of result.repository.issues.nodes) {
+                const branches = issue.linkedBranches?.nodes || [];
+                if (branches.some(b => b.ref?.name === branchName)) {
+                  linkedIssues.push({ number: issue.number, nodeId: issue.id });
+                  console.log(`Found issue #${issue.number} linked to branch ${branchName}`);
+                }
+              }
+
+              return linkedIssues;
+            }
+
+            async function moveIssueToStatus(github, issue, statusOptionId, org, projectNumber) {
+              // First, find the project item ID for this issue
+              const projectItemQuery = `
+                query($nodeId: ID!) {
+                  node(id: $nodeId) {
+                    ... on Issue {
+                      projectItems(first: 10) {
+                        nodes {
+                          id
+                          project {
+                            number
+                            owner {
+                              ... on Organization {
+                                login
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
+
+              const itemResult = await github.graphql(projectItemQuery, {
+                nodeId: issue.nodeId
+              });
+
+              const projectItems = itemResult.node?.projectItems?.nodes || [];
+              const targetItem = projectItems.find(item =>
+                item.project.number === projectNumber &&
+                item.project.owner?.login === org
+              );
+
+              if (!targetItem) {
+                console.log(`Issue #${issue.number} is not in the target project`);
+                return;
+              }
+
+              // Get the project and status field IDs
+              const projectQuery = `
+                query($org: String!, $number: Int!) {
+                  organization(login: $org) {
+                    projectV2(number: $number) {
+                      id
+                      field(name: "Status") {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
+
+              const projectResult = await github.graphql(projectQuery, {
+                org: org,
+                number: projectNumber
+              });
+
+              const projectId = projectResult.organization.projectV2.id;
+              const statusFieldId = projectResult.organization.projectV2.field.id;
+
+              // Update the status
+              const mutation = `
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $projectId
+                    itemId: $itemId
+                    fieldId: $fieldId
+                    value: { singleSelectOptionId: $optionId }
+                  }) {
+                    projectV2Item {
+                      id
+                    }
+                  }
+                }
+              `;
+
+              await github.graphql(mutation, {
+                projectId: projectId,
+                itemId: targetItem.id,
+                fieldId: statusFieldId,
+                optionId: statusOptionId
+              });
+
+              console.log(`Moved issue #${issue.number} to new status`);
+            }
+
+  # Move linked issues to "In Progress" on first push to a linked branch
+  branch-push:
+    # Skip for Dependabot - it can't access org secrets and doesn't need project tracking
+    if: github.event_name == 'push' && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Move linked issues to In Progress
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.org_project_token }}
+          script: |
+            const branch = context.payload.ref.replace('refs/heads/', '');
+            console.log(`Push to branch: ${branch}`);
+
+            // Find issues linked to this branch
+            const query = `
+              query($owner: String!, $repo: String!) {
+                repository(owner: $owner, name: $repo) {
+                  issues(first: 100, states: OPEN) {
+                    nodes {
+                      number
+                      id
+                      linkedBranches(first: 10) {
+                        nodes {
+                          ref {
+                            name
+                          }
+                        }
+                      }
+                      projectItems(first: 10) {
+                        nodes {
+                          id
+                          project {
+                            number
+                            owner {
+                              ... on Organization {
+                                login
+                              }
+                            }
+                          }
+                          fieldValueByName(name: "Status") {
+                            ... on ProjectV2ItemFieldSingleSelectValue {
+                              optionId
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const result = await github.graphql(query, {
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+
+            for (const issue of result.repository.issues.nodes) {
+              const branches = issue.linkedBranches?.nodes || [];
+              if (!branches.some(b => b.ref?.name === branch)) {
+                continue;
+              }
+
+              console.log(`Found issue #${issue.number} linked to branch ${branch}`);
+
+              // Find the project item in our target project
+              const projectItems = issue.projectItems?.nodes || [];
+              const targetItem = projectItems.find(item =>
+                item.project.number === ${{ env.PROJECT_NUMBER }} &&
+                item.project.owner?.login === '${{ env.ORG }}'
+              );
+
+              if (!targetItem) {
+                console.log(`Issue #${issue.number} is not in the target project`);
+                continue;
+              }
+
+              // Only move if not already in progress, waiting, or done
+              const currentStatus = targetItem.fieldValueByName?.optionId;
+              const activeStatuses = ['${{ env.STATUS_IN_PROGRESS }}', '${{ env.STATUS_WAITING }}', '${{ env.STATUS_DONE }}'];
+              if (activeStatuses.includes(currentStatus)) {
+                console.log(`Issue #${issue.number} is already in an active status, skipping`);
+                continue;
+              }
+
+              // Get project and field IDs, then update
+              const projectQuery = `
+                query($org: String!, $number: Int!) {
+                  organization(login: $org) {
+                    projectV2(number: $number) {
+                      id
+                      field(name: "Status") {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
+
+              const projectResult = await github.graphql(projectQuery, {
+                org: '${{ env.ORG }}',
+                number: ${{ env.PROJECT_NUMBER }}
+              });
+
+              const mutation = `
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $projectId
+                    itemId: $itemId
+                    fieldId: $fieldId
+                    value: { singleSelectOptionId: $optionId }
+                  }) {
+                    projectV2Item {
+                      id
+                    }
+                  }
+                }
+              `;
+
+              await github.graphql(mutation, {
+                projectId: projectResult.organization.projectV2.id,
+                itemId: targetItem.id,
+                fieldId: projectResult.organization.projectV2.field.id,
+                optionId: '${{ env.STATUS_IN_PROGRESS }}'
+              });
+
+              console.log(`Moved issue #${issue.number} to In Progress`);
+            }
+
+  # Move issue to "In Progress" when someone is assigned
+  issue-assigned:
+    if: github.event_name == 'issues' && github.event.action == 'assigned'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Move issue to In Progress
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.org_project_token }}
+          script: |
+            const issueNumber = context.payload.issue.number;
+            const issueNodeId = context.payload.issue.node_id;
+            console.log(`Issue #${issueNumber} was assigned`);
+
+            // Find the project item for this issue
+            const query = `
+              query($nodeId: ID!) {
+                node(id: $nodeId) {
+                  ... on Issue {
+                    projectItems(first: 10) {
+                      nodes {
+                        id
+                        project {
+                          number
+                          owner {
+                            ... on Organization {
+                              login
+                            }
+                          }
+                        }
+                        fieldValueByName(name: "Status") {
+                          ... on ProjectV2ItemFieldSingleSelectValue {
+                            optionId
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const result = await github.graphql(query, {
+              nodeId: issueNodeId
+            });
+
+            const projectItems = result.node?.projectItems?.nodes || [];
+            const targetItem = projectItems.find(item =>
+              item.project.number === ${{ env.PROJECT_NUMBER }} &&
+              item.project.owner?.login === '${{ env.ORG }}'
+            );
+
+            if (!targetItem) {
+              console.log(`Issue #${issueNumber} is not in the target project`);
+              return;
+            }
+
+            // Only move if in Icebox or Backlog
+            const currentStatus = targetItem.fieldValueByName?.optionId;
+            const activeStatuses = ['${{ env.STATUS_IN_PROGRESS }}', '${{ env.STATUS_WAITING }}', '${{ env.STATUS_DONE }}'];
+            if (activeStatuses.includes(currentStatus)) {
+              console.log(`Issue #${issueNumber} is already in an active status, skipping`);
+              return;
+            }
+
+            // Get project and field IDs
+            const projectQuery = `
+              query($org: String!, $number: Int!) {
+                organization(login: $org) {
+                  projectV2(number: $number) {
+                    id
+                    field(name: "Status") {
+                      ... on ProjectV2SingleSelectField {
+                        id
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const projectResult = await github.graphql(projectQuery, {
+              org: '${{ env.ORG }}',
+              number: ${{ env.PROJECT_NUMBER }}
+            });
+
+            const mutation = `
+              mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: $projectId
+                  itemId: $itemId
+                  fieldId: $fieldId
+                  value: { singleSelectOptionId: $optionId }
+                }) {
+                  projectV2Item {
+                    id
+                  }
+                }
+              }
+            `;
+
+            await github.graphql(mutation, {
+              projectId: projectResult.organization.projectV2.id,
+              itemId: targetItem.id,
+              fieldId: projectResult.organization.projectV2.field.id,
+              optionId: '${{ env.STATUS_IN_PROGRESS }}'
+            });
+
+            console.log(`Moved issue #${issueNumber} to In Progress`);
+
+  # Move linked issues to "Waiting" when PR is opened
+  pr-opened:
+    # Skip for Dependabot - it can't access org secrets and doesn't need project tracking
+    if: github.event_name == 'pull_request' && github.event.action == 'opened' && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Move linked issues to Waiting
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.org_project_token }}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const prNodeId = context.payload.pull_request.node_id;
+            console.log(`PR #${prNumber} was opened`);
+
+            // Find issues linked to this PR (via closing keywords or Development section)
+            const query = `
+              query($nodeId: ID!) {
+                node(id: $nodeId) {
+                  ... on PullRequest {
+                    closingIssuesReferences(first: 10) {
+                      nodes {
+                        number
+                        id
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const result = await github.graphql(query, {
+              nodeId: prNodeId
+            });
+
+            const linkedIssues = result.node?.closingIssuesReferences?.nodes || [];
+
+            if (linkedIssues.length === 0) {
+              console.log('No linked issues found for this PR');
+
+              // Fallback: check if the source branch is linked to any issues
+              const branch = context.payload.pull_request.head.ref;
+              const branchQuery = `
+                query($owner: String!, $repo: String!) {
+                  repository(owner: $owner, name: $repo) {
+                    issues(first: 100, states: OPEN) {
+                      nodes {
+                        number
+                        id
+                        linkedBranches(first: 10) {
+                          nodes {
+                            ref {
+                              name
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
+
+              const branchResult = await github.graphql(branchQuery, {
+                owner: context.repo.owner,
+                repo: context.repo.repo
+              });
+
+              for (const issue of branchResult.repository.issues.nodes) {
+                const branches = issue.linkedBranches?.nodes || [];
+                if (branches.some(b => b.ref?.name === branch)) {
+                  linkedIssues.push({ number: issue.number, id: issue.id });
+                  console.log(`Found issue #${issue.number} linked via branch ${branch}`);
+                }
+              }
+            }
+
+            for (const issue of linkedIssues) {
+              console.log(`Processing linked issue #${issue.number}`);
+
+              // Find the project item
+              const itemQuery = `
+                query($nodeId: ID!) {
+                  node(id: $nodeId) {
+                    ... on Issue {
+                      projectItems(first: 10) {
+                        nodes {
+                          id
+                          project {
+                            number
+                            owner {
+                              ... on Organization {
+                                login
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
+
+              const itemResult = await github.graphql(itemQuery, {
+                nodeId: issue.id
+              });
+
+              const projectItems = itemResult.node?.projectItems?.nodes || [];
+              const targetItem = projectItems.find(item =>
+                item.project.number === ${{ env.PROJECT_NUMBER }} &&
+                item.project.owner?.login === '${{ env.ORG }}'
+              );
+
+              if (!targetItem) {
+                console.log(`Issue #${issue.number} is not in the target project`);
+                continue;
+              }
+
+              // Get project and field IDs
+              const projectQuery = `
+                query($org: String!, $number: Int!) {
+                  organization(login: $org) {
+                    projectV2(number: $number) {
+                      id
+                      field(name: "Status") {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
+
+              const projectResult = await github.graphql(projectQuery, {
+                org: '${{ env.ORG }}',
+                number: ${{ env.PROJECT_NUMBER }}
+              });
+
+              const mutation = `
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $projectId
+                    itemId: $itemId
+                    fieldId: $fieldId
+                    value: { singleSelectOptionId: $optionId }
+                  }) {
+                    projectV2Item {
+                      id
+                    }
+                  }
+                }
+              `;
+
+              await github.graphql(mutation, {
+                projectId: projectResult.organization.projectV2.id,
+                itemId: targetItem.id,
+                fieldId: projectResult.organization.projectV2.field.id,
+                optionId: '${{ env.STATUS_WAITING }}'
+              });
+
+              console.log(`Moved issue #${issue.number} to Waiting`);
+            }
+
+  # Move linked issues to "Done" when PR is merged
+  pr-merged:
+    # Skip for Dependabot - it can't access org secrets and doesn't need project tracking
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Move linked issues to Done
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.org_project_token }}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const prNodeId = context.payload.pull_request.node_id;
+            console.log(`PR #${prNumber} was merged`);
+
+            // Find issues linked to this PR
+            const query = `
+              query($nodeId: ID!) {
+                node(id: $nodeId) {
+                  ... on PullRequest {
+                    closingIssuesReferences(first: 10) {
+                      nodes {
+                        number
+                        id
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const result = await github.graphql(query, {
+              nodeId: prNodeId
+            });
+
+            const linkedIssues = result.node?.closingIssuesReferences?.nodes || [];
+
+            if (linkedIssues.length === 0) {
+              console.log('No linked issues found for this PR');
+
+              // Fallback: check if the source branch is linked to any issues
+              const branch = context.payload.pull_request.head.ref;
+              const branchQuery = `
+                query($owner: String!, $repo: String!) {
+                  repository(owner: $owner, name: $repo) {
+                    issues(first: 100, states: OPEN) {
+                      nodes {
+                        number
+                        id
+                        linkedBranches(first: 10) {
+                          nodes {
+                            ref {
+                              name
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
+
+              const branchResult = await github.graphql(branchQuery, {
+                owner: context.repo.owner,
+                repo: context.repo.repo
+              });
+
+              for (const issue of branchResult.repository.issues.nodes) {
+                const branches = issue.linkedBranches?.nodes || [];
+                if (branches.some(b => b.ref?.name === branch)) {
+                  linkedIssues.push({ number: issue.number, id: issue.id });
+                  console.log(`Found issue #${issue.number} linked via branch ${branch}`);
+                }
+              }
+            }
+
+            for (const issue of linkedIssues) {
+              console.log(`Processing linked issue #${issue.number}`);
+
+              // Find the project item
+              const itemQuery = `
+                query($nodeId: ID!) {
+                  node(id: $nodeId) {
+                    ... on Issue {
+                      projectItems(first: 10) {
+                        nodes {
+                          id
+                          project {
+                            number
+                            owner {
+                              ... on Organization {
+                                login
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
+
+              const itemResult = await github.graphql(itemQuery, {
+                nodeId: issue.id
+              });
+
+              const projectItems = itemResult.node?.projectItems?.nodes || [];
+              const targetItem = projectItems.find(item =>
+                item.project.number === ${{ env.PROJECT_NUMBER }} &&
+                item.project.owner?.login === '${{ env.ORG }}'
+              );
+
+              if (!targetItem) {
+                console.log(`Issue #${issue.number} is not in the target project`);
+                continue;
+              }
+
+              // Get project and field IDs
+              const projectQuery = `
+                query($org: String!, $number: Int!) {
+                  organization(login: $org) {
+                    projectV2(number: $number) {
+                      id
+                      field(name: "Status") {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
+
+              const projectResult = await github.graphql(projectQuery, {
+                org: '${{ env.ORG }}',
+                number: ${{ env.PROJECT_NUMBER }}
+              });
+
+              const mutation = `
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $projectId
+                    itemId: $itemId
+                    fieldId: $fieldId
+                    value: { singleSelectOptionId: $optionId }
+                  }) {
+                    projectV2Item {
+                      id
+                    }
+                  }
+                }
+              `;
+
+              await github.graphql(mutation, {
+                projectId: projectResult.organization.projectV2.id,
+                itemId: targetItem.id,
+                fieldId: projectResult.organization.projectV2.field.id,
+                optionId: '${{ env.STATUS_DONE }}'
+              });
+
+              console.log(`Moved issue #${issue.number} to Done`);
+            }
+
+  # Move PR itself to "Waiting" when opened
+  pr-item-opened:
+    # Skip for Dependabot - it can't access org secrets and doesn't need project tracking
+    if: github.event_name == 'pull_request' && github.event.action == 'opened' && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Move PR to Waiting
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.org_project_token }}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const prNodeId = context.payload.pull_request.node_id;
+            console.log(`PR #${prNumber} was opened`);
+
+            // Find the project item for this PR
+            const query = `
+              query($nodeId: ID!) {
+                node(id: $nodeId) {
+                  ... on PullRequest {
+                    projectItems(first: 10) {
+                      nodes {
+                        id
+                        project {
+                          number
+                          owner {
+                            ... on Organization {
+                              login
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const result = await github.graphql(query, {
+              nodeId: prNodeId
+            });
+
+            const projectItems = result.node?.projectItems?.nodes || [];
+            const targetItem = projectItems.find(item =>
+              item.project.number === ${{ env.PROJECT_NUMBER }} &&
+              item.project.owner?.login === '${{ env.ORG }}'
+            );
+
+            if (!targetItem) {
+              console.log(`PR #${prNumber} is not in the target project`);
+              return;
+            }
+
+            // Get project and field IDs
+            const projectQuery = `
+              query($org: String!, $number: Int!) {
+                organization(login: $org) {
+                  projectV2(number: $number) {
+                    id
+                    field(name: "Status") {
+                      ... on ProjectV2SingleSelectField {
+                        id
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const projectResult = await github.graphql(projectQuery, {
+              org: '${{ env.ORG }}',
+              number: ${{ env.PROJECT_NUMBER }}
+            });
+
+            const mutation = `
+              mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: $projectId
+                  itemId: $itemId
+                  fieldId: $fieldId
+                  value: { singleSelectOptionId: $optionId }
+                }) {
+                  projectV2Item {
+                    id
+                  }
+                }
+              }
+            `;
+
+            await github.graphql(mutation, {
+              projectId: projectResult.organization.projectV2.id,
+              itemId: targetItem.id,
+              fieldId: projectResult.organization.projectV2.field.id,
+              optionId: '${{ env.STATUS_WAITING }}'
+            });
+
+            console.log(`Moved PR #${prNumber} to Waiting`);
+
+  # Move PR itself to "Done" when merged
+  pr-item-merged:
+    # Skip for Dependabot - it can't access org secrets and doesn't need project tracking
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Move PR to Done
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.org_project_token }}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const prNodeId = context.payload.pull_request.node_id;
+            console.log(`PR #${prNumber} was merged`);
+
+            // Find the project item for this PR
+            const query = `
+              query($nodeId: ID!) {
+                node(id: $nodeId) {
+                  ... on PullRequest {
+                    projectItems(first: 10) {
+                      nodes {
+                        id
+                        project {
+                          number
+                          owner {
+                            ... on Organization {
+                              login
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const result = await github.graphql(query, {
+              nodeId: prNodeId
+            });
+
+            const projectItems = result.node?.projectItems?.nodes || [];
+            const targetItem = projectItems.find(item =>
+              item.project.number === ${{ env.PROJECT_NUMBER }} &&
+              item.project.owner?.login === '${{ env.ORG }}'
+            );
+
+            if (!targetItem) {
+              console.log(`PR #${prNumber} is not in the target project`);
+              return;
+            }
+
+            // Get project and field IDs
+            const projectQuery = `
+              query($org: String!, $number: Int!) {
+                organization(login: $org) {
+                  projectV2(number: $number) {
+                    id
+                    field(name: "Status") {
+                      ... on ProjectV2SingleSelectField {
+                        id
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const projectResult = await github.graphql(projectQuery, {
+              org: '${{ env.ORG }}',
+              number: ${{ env.PROJECT_NUMBER }}
+            });
+
+            const mutation = `
+              mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: $projectId
+                  itemId: $itemId
+                  fieldId: $fieldId
+                  value: { singleSelectOptionId: $optionId }
+                }) {
+                  projectV2Item {
+                    id
+                  }
+                }
+              }
+            `;
+
+            await github.graphql(mutation, {
+              projectId: projectResult.organization.projectV2.id,
+              itemId: targetItem.id,
+              fieldId: projectResult.organization.projectV2.field.id,
+              optionId: '${{ env.STATUS_DONE }}'
+            });
+
+            console.log(`Moved PR #${prNumber} to Done`);
