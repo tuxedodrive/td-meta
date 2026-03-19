@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# ABOUTME: Links shared agents and skills from td-meta into the current repo.
+# ABOUTME: Run from any TuxedoDrive repo: ../td-meta/bin/setup-meta
+
+set -euo pipefail
+
+# Find td-meta relative to this script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TD_META="$(dirname "$SCRIPT_DIR")"
+
+# Find the consuming repo (current working directory)
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+REPO_NAME="$(basename "$REPO_ROOT")"
+
+echo "Linking td-meta shared config into $REPO_NAME..."
+
+# --- Agents ---
+mkdir -p "$REPO_ROOT/.claude/agents"
+
+AGENTS=(
+  architect
+  cranky-engineer
+  designer
+  devops-engineer
+  full-stack-developer
+  integration-engineer
+  librarian
+  oncall-engineer
+  subject-matter-expert
+)
+
+linked=0
+skipped=0
+
+for agent in "${AGENTS[@]}"; do
+  src="$TD_META/.claude/agents/$agent.md"
+  dst="$REPO_ROOT/.claude/agents/$agent.md"
+
+  if [ ! -f "$src" ]; then
+    echo "  skip $agent (not found in td-meta)"
+    skipped=$((skipped + 1))
+    continue
+  fi
+
+  # Don't overwrite a non-symlink file (repo has its own version)
+  if [ -f "$dst" ] && [ ! -L "$dst" ]; then
+    echo "  skip $agent (repo has its own version)"
+    skipped=$((skipped + 1))
+    continue
+  fi
+
+  ln -sf "$src" "$dst"
+  linked=$((linked + 1))
+done
+
+echo "  $linked agents linked, $skipped skipped"
+
+# --- Verify .gitignore ---
+# Symlinked agents shouldn't be committed in consuming repos
+if [ -f "$REPO_ROOT/.gitignore" ]; then
+  if ! grep -q "^\.claude/agents/" "$REPO_ROOT/.gitignore" 2>/dev/null; then
+    echo ""
+    echo "WARNING: .claude/agents/ is not in .gitignore"
+    echo "  Symlinked agents shouldn't be committed. Add to .gitignore:"
+    echo "  .claude/agents/"
+  fi
+fi
+
+echo ""
+echo "Done. Agents from td-meta are now available in $REPO_NAME."
+echo "Run 'git pull' in td-meta to get updates."
