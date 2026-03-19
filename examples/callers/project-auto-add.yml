@@ -1,0 +1,18 @@
+# ABOUTME: Caller workflow for Project Auto-Add. Copy to .github/workflows/ in consuming repos.
+# ABOUTME: Auto-adds issues and PRs to the GitHub Project board via td-meta's reusable workflow.
+
+name: Auto-add to Project
+
+on:
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened]
+
+jobs:
+  add-to-project:
+    uses: tuxedodrive/td-meta/.github/workflows/project-auto-add.yml@main
+    with:
+      org: tuxedodrive
+      projectNumber: 1
+    secrets: inherit
