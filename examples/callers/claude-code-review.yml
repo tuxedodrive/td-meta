@@ -1,0 +1,16 @@
+# ABOUTME: Caller workflow for Claude Code Review. Copy to .github/workflows/ in consuming repos.
+# ABOUTME: Triggers on PR open/reopen, delegates to td-meta's reusable workflow.
+
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, reopened]
+    paths-ignore:
+      - '*.md'
+      - 'LICENSE'
+
+jobs:
+  review:
+    uses: tuxedodrive/td-meta/.github/workflows/claude-code-review.yml@main
+    secrets: inherit

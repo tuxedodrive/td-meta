@@ -1,0 +1,59 @@
+# ABOUTME: Reusable workflow for Claude Code PR reviews across all TuxedoDrive repos.
+# ABOUTME: Callers trigger on pull_request; this defines the review logic.
+
+name: Claude Code Review
+
+on:
+  workflow_call:
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN:
+        required: true
+
+jobs:
+  claude-review:
+    # Skip bot PRs and drafts — only review human-authored, ready PRs
+    if: |
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      github.event.pull_request.draft != true
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          use_sticky_comment: true
+          prompt: |
+            Please review this pull request and provide feedback on:
+            - Code quality and best practices
+            - Potential bugs or issues
+            - Performance considerations
+            - Security concerns
+            - Test coverage
+
+            Use the repository's CLAUDE.md for guidance on style and conventions. Be constructive and helpful in your feedback.
+
+            FORMAT YOUR REVIEW using GitHub-flavored markdown:
+            - Use ## headers to separate sections (e.g., ## Critical, ## Bugs, ## Code Quality)
+            - Use bullet points for individual findings
+            - Use `inline code` for method/class/file names
+            - Use code blocks with language hints for code snippets
+            - Order findings by severity (critical → minor)
+            - End with a ## Summary section listing blocking items
+
+            Do NOT post comments manually via gh. The action posts your review automatically.
+
+          # Read-only gh tools for gathering context. No gh pr comment — the action posts automatically.
+          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'

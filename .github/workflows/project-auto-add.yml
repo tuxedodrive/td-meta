@@ -1,0 +1,37 @@
+# ABOUTME: Reusable workflow to auto-add issues and PRs to the GitHub Project board.
+# ABOUTME: Migrated from the tuxedodrive/.github org repo.
+
+# v0.1.1
+name: Org Project Auto-Add
+
+on:
+  workflow_call:
+    inputs:
+      org:
+        required: true
+        type: string
+      projectNumber:
+        required: true
+        type: number
+      issueStatusName:
+        required: false
+        type: string
+        default: "📋 Backlog"
+      prStatusName:
+        required: false
+        type: string
+        default: "👀 Waiting / In review"
+    secrets:
+      ORG_PROJECT_TOKEN:
+        required: true
+        description: "PAT with project scope for Projects v2 API access"
+
+jobs:
+  add-to-project:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add to project
+        uses: actions/add-to-project@v1.0.2
+        with:
+          project-url: https://github.com/orgs/${{ inputs.org }}/projects/${{ inputs.projectNumber }}
+          github-token: ${{ secrets.ORG_PROJECT_TOKEN }}
