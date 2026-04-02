@@ -421,20 +421,32 @@ jobs:
 
             console.log(`Moved issue #${issueNumber} to In Progress`);
 
-  # Move linked issues to "Waiting" when PR is opened
-  pr-opened:
-    # Skip for Dependabot - it can't access org secrets and doesn't need project tracking
-    if: github.event_name == 'pull_request' && github.event.action == 'opened' && github.actor != 'dependabot[bot]'
+  # Move linked issues based on PR lifecycle (draft, ready, merged)
+  pr-linked-issues-status:
+    if: |
+      github.event_name == 'pull_request' &&
+      github.actor != 'dependabot[bot]' &&
+      (
+        (github.event.action == 'opened' && github.event.pull_request.draft != true) ||
+        github.event.action == 'ready_for_review' ||
+        (github.event.action == 'closed' && github.event.pull_request.merged == true)
+      )
     runs-on: ubuntu-latest
     steps:
-      - name: Move linked issues to Waiting
+      - name: Move linked issues to appropriate status
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.org_project_token }}
           script: |
-            const prNumber = context.payload.pull_request.number;
-            const prNodeId = context.payload.pull_request.node_id;
-            console.log(`PR #${prNumber} was opened`);
+            const pr = context.payload.pull_request;
+            const action = context.payload.action;
+
+            // Determine target status: merged → Done, otherwise → Waiting
+            const isMerged = action === 'closed' && pr.merged;
+            const targetStatus = isMerged ? '${{ env.STATUS_DONE }}' : '${{ env.STATUS_WAITING }}';
+            const statusLabel = isMerged ? 'Done' : 'Waiting';
+
+            console.log(`PR #${pr.number} ${action} → moving linked issues to ${statusLabel}`);
 
             // Find issues linked to this PR (via closing keywords or Development section)
             const query = `
@@ -453,16 +465,16 @@ jobs:
             `;
 
             const result = await github.graphql(query, {
-              nodeId: prNodeId
+              nodeId: pr.node_id
             });
 
             const linkedIssues = result.node?.closingIssuesReferences?.nodes || [];
 
             if (linkedIssues.length === 0) {
-              console.log('No linked issues found for this PR');
+              console.log('No linked issues found via closing references');
 
               // Fallback: check if the source branch is linked to any issues
-              const branch = context.payload.pull_request.head.ref;
+              const branch = pr.head.ref;
               const branchQuery = `
                 query($owner: String!, $repo: String!) {
                   repository(owner: $owner, name: $repo) {
@@ -500,7 +512,6 @@ jobs:
             for (const issue of linkedIssues) {
               console.log(`Processing linked issue #${issue.number}`);
 
-              // Find the project item
               const itemQuery = `
                 query($nodeId: ID!) {
                   node(id: $nodeId) {
@@ -538,7 +549,6 @@ jobs:
                 continue;
               }
 
-              // Get project and field IDs
               const projectQuery = `
                 query($org: String!, $number: Int!) {
                   organization(login: $org) {
@@ -578,189 +588,51 @@ jobs:
                 projectId: projectResult.organization.projectV2.id,
                 itemId: targetItem.id,
                 fieldId: projectResult.organization.projectV2.field.id,
-                optionId: '${{ env.STATUS_WAITING }}'
+                optionId: targetStatus
               });
 
-              console.log(`Moved issue #${issue.number} to Waiting`);
+              console.log(`Moved issue #${issue.number} to ${statusLabel}`);
             }
 
-  # Move linked issues to "Done" when PR is merged
-  pr-merged:
-    # Skip for Dependabot - it can't access org secrets and doesn't need project tracking
-    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && github.actor != 'dependabot[bot]'
+  # Move PR itself to appropriate status column based on lifecycle events.
+  # Draft PRs → In Progress, ready PRs → Waiting, merged PRs → Done.
+  pr-item-status:
+    if: |
+      github.event_name == 'pull_request' &&
+      github.actor != 'dependabot[bot]' &&
+      (
+        github.event.action == 'opened' ||
+        github.event.action == 'ready_for_review' ||
+        github.event.action == 'converted_to_draft' ||
+        (github.event.action == 'closed' && github.event.pull_request.merged == true)
+      )
     runs-on: ubuntu-latest
     steps:
-      - name: Move linked issues to Done
+      - name: Move PR to appropriate status
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.org_project_token }}
           script: |
-            const prNumber = context.payload.pull_request.number;
-            const prNodeId = context.payload.pull_request.node_id;
-            console.log(`PR #${prNumber} was merged`);
+            const pr = context.payload.pull_request;
+            const action = context.payload.action;
 
-            // Find issues linked to this PR
-            const query = `
-              query($nodeId: ID!) {
-                node(id: $nodeId) {
-                  ... on PullRequest {
-                    closingIssuesReferences(first: 10) {
-                      nodes {
-                        number
-                        id
-                      }
-                    }
-                  }
-                }
-              }
-            `;
-
-            const result = await github.graphql(query, {
-              nodeId: prNodeId
-            });
-
-            const linkedIssues = result.node?.closingIssuesReferences?.nodes || [];
-
-            if (linkedIssues.length === 0) {
-              console.log('No linked issues found for this PR');
-
-              // Fallback: check if the source branch is linked to any issues
-              const branch = context.payload.pull_request.head.ref;
-              const branchQuery = `
-                query($owner: String!, $repo: String!) {
-                  repository(owner: $owner, name: $repo) {
-                    issues(first: 100, states: OPEN) {
-                      nodes {
-                        number
-                        id
-                        linkedBranches(first: 10) {
-                          nodes {
-                            ref {
-                              name
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              `;
-
-              const branchResult = await github.graphql(branchQuery, {
-                owner: context.repo.owner,
-                repo: context.repo.repo
-              });
-
-              for (const issue of branchResult.repository.issues.nodes) {
-                const branches = issue.linkedBranches?.nodes || [];
-                if (branches.some(b => b.ref?.name === branch)) {
-                  linkedIssues.push({ number: issue.number, id: issue.id });
-                  console.log(`Found issue #${issue.number} linked via branch ${branch}`);
-                }
-              }
+            // Determine target status based on PR lifecycle event
+            let targetStatus, statusLabel;
+            if (action === 'closed' && pr.merged) {
+              targetStatus = '${{ env.STATUS_DONE }}';
+              statusLabel = 'Done';
+            } else if (action === 'ready_for_review' || (action === 'opened' && !pr.draft)) {
+              targetStatus = '${{ env.STATUS_WAITING }}';
+              statusLabel = 'Waiting';
+            } else if (action === 'converted_to_draft' || (action === 'opened' && pr.draft)) {
+              targetStatus = '${{ env.STATUS_IN_PROGRESS }}';
+              statusLabel = 'In Progress';
+            } else {
+              console.log(`No status transition for action=${action} draft=${pr.draft}`);
+              return;
             }
 
-            for (const issue of linkedIssues) {
-              console.log(`Processing linked issue #${issue.number}`);
-
-              // Find the project item
-              const itemQuery = `
-                query($nodeId: ID!) {
-                  node(id: $nodeId) {
-                    ... on Issue {
-                      projectItems(first: 10) {
-                        nodes {
-                          id
-                          project {
-                            number
-                            owner {
-                              ... on Organization {
-                                login
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              `;
-
-              const itemResult = await github.graphql(itemQuery, {
-                nodeId: issue.id
-              });
-
-              const projectItems = itemResult.node?.projectItems?.nodes || [];
-              const targetItem = projectItems.find(item =>
-                item.project.number === ${{ env.PROJECT_NUMBER }} &&
-                item.project.owner?.login === '${{ env.ORG }}'
-              );
-
-              if (!targetItem) {
-                console.log(`Issue #${issue.number} is not in the target project`);
-                continue;
-              }
-
-              // Get project and field IDs
-              const projectQuery = `
-                query($org: String!, $number: Int!) {
-                  organization(login: $org) {
-                    projectV2(number: $number) {
-                      id
-                      field(name: "Status") {
-                        ... on ProjectV2SingleSelectField {
-                          id
-                        }
-                      }
-                    }
-                  }
-                }
-              `;
-
-              const projectResult = await github.graphql(projectQuery, {
-                org: '${{ env.ORG }}',
-                number: ${{ env.PROJECT_NUMBER }}
-              });
-
-              const mutation = `
-                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
-                  updateProjectV2ItemFieldValue(input: {
-                    projectId: $projectId
-                    itemId: $itemId
-                    fieldId: $fieldId
-                    value: { singleSelectOptionId: $optionId }
-                  }) {
-                    projectV2Item {
-                      id
-                    }
-                  }
-                }
-              `;
-
-              await github.graphql(mutation, {
-                projectId: projectResult.organization.projectV2.id,
-                itemId: targetItem.id,
-                fieldId: projectResult.organization.projectV2.field.id,
-                optionId: '${{ env.STATUS_DONE }}'
-              });
-
-              console.log(`Moved issue #${issue.number} to Done`);
-            }
-
-  # Move PR itself to "Waiting" when opened
-  pr-item-opened:
-    # Skip for Dependabot - it can't access org secrets and doesn't need project tracking
-    if: github.event_name == 'pull_request' && github.event.action == 'opened' && github.actor != 'dependabot[bot]'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Move PR to Waiting
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.org_project_token }}
-          script: |
-            const prNumber = context.payload.pull_request.number;
-            const prNodeId = context.payload.pull_request.node_id;
-            console.log(`PR #${prNumber} was opened`);
+            console.log(`PR #${pr.number} → ${statusLabel} (action: ${action}, draft: ${pr.draft})`);
 
             // Find the project item for this PR
             const query = `
@@ -786,7 +658,7 @@ jobs:
             `;
 
             const result = await github.graphql(query, {
-              nodeId: prNodeId
+              nodeId: pr.node_id
             });
 
             const projectItems = result.node?.projectItems?.nodes || [];
@@ -796,11 +668,10 @@ jobs:
             );
 
             if (!targetItem) {
-              console.log(`PR #${prNumber} is not in the target project`);
+              console.log(`PR #${pr.number} is not in the target project`);
               return;
             }
 
-            // Get project and field IDs
             const projectQuery = `
               query($org: String!, $number: Int!) {
                 organization(login: $org) {
@@ -840,105 +711,7 @@ jobs:
               projectId: projectResult.organization.projectV2.id,
               itemId: targetItem.id,
               fieldId: projectResult.organization.projectV2.field.id,
-              optionId: '${{ env.STATUS_WAITING }}'
+              optionId: targetStatus
             });
 
-            console.log(`Moved PR #${prNumber} to Waiting`);
-
-  # Move PR itself to "Done" when merged
-  pr-item-merged:
-    # Skip for Dependabot - it can't access org secrets and doesn't need project tracking
-    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && github.actor != 'dependabot[bot]'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Move PR to Done
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.org_project_token }}
-          script: |
-            const prNumber = context.payload.pull_request.number;
-            const prNodeId = context.payload.pull_request.node_id;
-            console.log(`PR #${prNumber} was merged`);
-
-            // Find the project item for this PR
-            const query = `
-              query($nodeId: ID!) {
-                node(id: $nodeId) {
-                  ... on PullRequest {
-                    projectItems(first: 10) {
-                      nodes {
-                        id
-                        project {
-                          number
-                          owner {
-                            ... on Organization {
-                              login
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            `;
-
-            const result = await github.graphql(query, {
-              nodeId: prNodeId
-            });
-
-            const projectItems = result.node?.projectItems?.nodes || [];
-            const targetItem = projectItems.find(item =>
-              item.project.number === ${{ env.PROJECT_NUMBER }} &&
-              item.project.owner?.login === '${{ env.ORG }}'
-            );
-
-            if (!targetItem) {
-              console.log(`PR #${prNumber} is not in the target project`);
-              return;
-            }
-
-            // Get project and field IDs
-            const projectQuery = `
-              query($org: String!, $number: Int!) {
-                organization(login: $org) {
-                  projectV2(number: $number) {
-                    id
-                    field(name: "Status") {
-                      ... on ProjectV2SingleSelectField {
-                        id
-                      }
-                    }
-                  }
-                }
-              }
-            `;
-
-            const projectResult = await github.graphql(projectQuery, {
-              org: '${{ env.ORG }}',
-              number: ${{ env.PROJECT_NUMBER }}
-            });
-
-            const mutation = `
-              mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
-                updateProjectV2ItemFieldValue(input: {
-                  projectId: $projectId
-                  itemId: $itemId
-                  fieldId: $fieldId
-                  value: { singleSelectOptionId: $optionId }
-                }) {
-                  projectV2Item {
-                    id
-                  }
-                }
-              }
-            `;
-
-            await github.graphql(mutation, {
-              projectId: projectResult.organization.projectV2.id,
-              itemId: targetItem.id,
-              fieldId: projectResult.organization.projectV2.field.id,
-              optionId: '${{ env.STATUS_DONE }}'
-            });
-
-            console.log(`Moved PR #${prNumber} to Done`);
+            console.log(`Moved PR #${pr.number} to ${statusLabel}`);
