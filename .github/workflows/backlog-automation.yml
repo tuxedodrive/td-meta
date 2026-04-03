@@ -1,5 +1,5 @@
 # ABOUTME: Reusable workflow for automating GitHub Project board status transitions.
-# ABOUTME: Called by td-core, td-edge, td-training, td-fleet to move issues and PRs based on lifecycle.
+# ABOUTME: Called by td-core, td-edge, td-training, td-tailor to move issues and PRs based on lifecycle.
 
 name: Backlog Automation (Reusable)
 

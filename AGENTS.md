@@ -52,7 +52,7 @@ Before pushing changes:
 
 - [td-core](https://github.com/tuxedodrive/td-core) - Core Rails application
 - [td-edge](https://github.com/tuxedodrive/td-edge) - Edge detection system
-- [td-fleet](https://github.com/tuxedodrive/td-fleet) - Fleet management
+- [td-tailor](https://github.com/tuxedodrive/td-tailor) - Fleet management
 - [td-agent](https://github.com/tuxedodrive/td-agent) - AI Phone Customer Service Agent
 - [td-training](https://github.com/tuxedodrive/td-training) - Training materials
 

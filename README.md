@@ -1,7 +1,7 @@
 🌌 Why does td-meta exist?
 =============================
 
-TuxedoDrive operates multiple repositories (td-core, td-edge, td-fleet, td-agent, td-training) that share common infrastructure needs. Rather than duplicating GitHub Actions workflows, architectural decisions, and documentation patterns across repos, td-meta serves as the single source of truth for cross-repository infrastructure.
+TuxedoDrive operates multiple repositories (td-core, td-edge, td-tailor, td-agent, td-training) that share common infrastructure needs. Rather than duplicating GitHub Actions workflows, architectural decisions, and documentation patterns across repos, td-meta serves as the single source of truth for cross-repository infrastructure.
 
 
 🌌🌌 Who benefits from td-meta?
@@ -91,7 +91,7 @@ td-meta/
 
 - [td-core](https://github.com/tuxedodrive/td-core) - Core Rails application
 - [td-edge](https://github.com/tuxedodrive/td-edge) - Edge detection system
-- [td-fleet](https://github.com/tuxedodrive/td-fleet) - Fleet management
+- [td-tailor](https://github.com/tuxedodrive/td-tailor) - Fleet management
 - [td-agent](https://github.com/tuxedodrive/td-agent) - AI Phone Customer Service Agent
 - [td-training](https://github.com/tuxedodrive/td-training) - Training materials
 

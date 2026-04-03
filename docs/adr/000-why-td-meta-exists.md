@@ -10,7 +10,7 @@ This is a meta-ADR explaining the purpose and scope of the td-meta repository.
 
 ## Decision
 
-The `tuxedodrive/td-meta` repository exists to house cross-repository infrastructure and decisions that affect multiple TuxedoDrive repositories (td-core, td-edge, td-training, td-fleet, etc.).
+The `tuxedodrive/td-meta` repository exists to house cross-repository infrastructure and decisions that affect multiple TuxedoDrive repositories (td-core, td-edge, td-training, td-tailor, etc.).
 
 ## Rationale
 

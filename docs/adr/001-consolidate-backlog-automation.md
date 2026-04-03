@@ -6,7 +6,7 @@
 
 ## Context
 
-All TuxedoDrive repositories (td-core, td-edge, td-training, td-fleet) use the same GitHub Project board (Project #1) to track work through a Kanban flow:
+All TuxedoDrive repositories (td-core, td-edge, td-training, td-tailor) use the same GitHub Project board (Project #1) to track work through a Kanban flow:
 
 ```
 ☃️ Icebox → 📋 Backlog → 🤸‍♂️ In Progress → 👀 Waiting/Review → 🥳 Done
@@ -26,7 +26,7 @@ The automation workflow (`.github/workflows/project-automation.yml`) is **duplic
 - td-core: 900+ lines
 - td-edge: 900+ lines (exact copy)
 - td-training: 900+ lines (exact copy)
-- td-fleet: 900+ lines (exact copy)
+- td-tailor: 900+ lines (exact copy)
 
 This creates several problems:
 
@@ -223,7 +223,7 @@ Keep duplicating, but establish strict process to keep them in sync.
 ### Phase 3: Roll Out to Other Repos
 1. Update td-edge with caller workflow
 2. Update td-training with caller workflow
-3. Update td-fleet with caller workflow
+3. Update td-tailor with caller workflow
 4. Delete old duplicated workflows
 
 ### Phase 4: Documentation
