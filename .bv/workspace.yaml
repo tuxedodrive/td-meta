@@ -1,0 +1,11 @@
+repos:
+  - path: /Users/jpb/workspace/td-core
+    name: td-core
+  - path: /Users/jpb/workspace/td-edge
+    name: td-edge
+  - path: /Users/jpb/workspace/td-meta
+    name: td-meta
+  - path: /Users/jpb/workspace/td-tailor
+    name: td-tailor
+  - path: /Users/jpb/workspace/td-training
+    name: td-training
