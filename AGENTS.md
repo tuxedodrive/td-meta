@@ -57,3 +57,36 @@ Before pushing changes:
 - [td-training](https://github.com/tuxedodrive/td-training) - Training materials
 
 Consult each repository's AGENTS.md for repo-specific guidelines.
+
+## Remote Hardware Access
+
+All td-* repos may need access to Raspberry Pi devices running td-edge at car wash locations.
+
+### SSH via Cloudflare Tunnel
+
+Requires `cloudflared` (`brew install cloudflared` on macOS):
+
+```bash
+ssh -o ProxyCommand='cloudflared access ssh --hostname %h' td-pi@ssh-metal-pi.tuxedodrive.dev
+```
+
+### Fleet
+
+| Device | Environment | Location | SSH Host |
+|--------|-------------|----------|----------|
+| metal-pi | staging + production | Advance Car Wash, Jamaica Queens | `ssh-metal-pi.tuxedodrive.dev` |
+
+See `td-tailor/ansible/inventory.yml` for the full fleet inventory.
+
+### Live Data (td-core)
+
+td-core's `bin/dev` starts a reverse SSH tunnel (`bin/pi-tunnel`) that routes Pi sighting data to localhost:3281. td-edge sends to three targets (configured in `td-edge/config/targets.yaml`): production, staging, and local dev (best-effort).
+
+### Useful td-edge Endpoints (port 8001 on Pi)
+
+| Endpoint | Purpose |
+|----------|---------|
+| `/health` | Service health |
+| `/detections/live` | Live detection UI |
+| `/detections/latest` | JSON feed of recent detections |
+| `/cameras/` | Camera status and live frames |
