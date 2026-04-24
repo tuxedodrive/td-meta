@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 128,
+  "inception_ts": "2026-04-24T04:35:50.510341+00:00",
+  "last_active_ts": "2026-04-24T04:35:50.510363+00:00",
+  "model": "claude-opus-4-7",
+  "name": "TopazPeak",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "td-edge #135 Pi-side make/model/color investigation, first cross-repo story in new ~/workspace/tuxedodrive setup"
+}

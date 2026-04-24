@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 65,
+  "inception_ts": "2026-04-06T21:24:16.540601+00:00",
+  "last_active_ts": "2026-04-06T21:24:16.540624+00:00",
+  "model": "opus",
+  "name": "CloudyStone",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "Competition dashboard lenses + Time Machine backfill handoff"
+}

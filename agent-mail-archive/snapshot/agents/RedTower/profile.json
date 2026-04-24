@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 50,
+  "inception_ts": "2026-03-29T01:10:29.635776+00:00",
+  "last_active_ts": "2026-04-02T18:09:24.065419+00:00",
+  "model": "claude-opus-4-6",
+  "name": "RedTower",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "Checking for ALPR rate improvement messages from td-edge agents"
+}

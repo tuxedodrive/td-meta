@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 99,
+  "inception_ts": "2026-04-16T02:16:01.338932+00:00",
+  "last_active_ts": "2026-04-16T02:16:01.338977+00:00",
+  "model": "claude-opus-4-6",
+  "name": "SageBadger",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "Building positional filmstrip UI for operator dashboard \u2014 mapping car wash queue positions to named slots"
+}

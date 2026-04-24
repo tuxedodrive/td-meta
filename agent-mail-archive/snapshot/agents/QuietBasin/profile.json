@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 123,
+  "inception_ts": "2026-04-23T17:39:15.259816+00:00",
+  "last_active_ts": "2026-04-23T17:39:15.259834+00:00",
+  "model": "claude-opus-4-7",
+  "name": "QuietBasin",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "Reviewing Washify ETL / active membership counts in td-core sanity-check-import worktree"
+}

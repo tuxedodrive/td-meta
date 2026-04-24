@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 129,
+  "inception_ts": "2026-04-24T16:52:18.520124+00:00",
+  "last_active_ts": "2026-04-24T16:52:18.520138+00:00",
+  "model": "claude-opus-4-7",
+  "name": "LavenderGate",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "td-core production hardening audit review & planning with JPB"
+}

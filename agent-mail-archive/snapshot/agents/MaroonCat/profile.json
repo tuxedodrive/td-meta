@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 127,
+  "inception_ts": "2026-04-23T21:09:32.065921+00:00",
+  "last_active_ts": "2026-04-23T21:09:32.065942+00:00",
+  "model": "opus-4.7",
+  "name": "MaroonCat",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "Assessing member-discount for exhausted-visits flow in td-core"
+}

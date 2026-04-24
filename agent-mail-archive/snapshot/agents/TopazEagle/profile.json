@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 57,
+  "inception_ts": "2026-04-03T15:36:11.250993+00:00",
+  "last_active_ts": "2026-04-03T15:36:11.251016+00:00",
+  "model": "opus-4.6",
+  "name": "TopazEagle",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "CI healing and PR maintenance on td-core tax-nyc branch"
+}

@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 104,
+  "inception_ts": "2026-04-16T03:32:25.043400+00:00",
+  "last_active_ts": "2026-04-16T03:32:25.043423+00:00",
+  "model": "claude-opus-4-6",
+  "name": "WhiteCave",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "td-edge cam2 ALPR latency fix \u2014 progressive sightings"
+}

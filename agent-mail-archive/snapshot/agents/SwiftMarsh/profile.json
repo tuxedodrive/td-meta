@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 29,
+  "inception_ts": "2026-02-20T00:24:19.692255+00:00",
+  "last_active_ts": "2026-02-20T00:24:19.692264+00:00",
+  "model": "claude-haiku-4-5-20251001",
+  "name": "SwiftMarsh",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "Coordinating visit creation architecture refactor with td-edge team (td-core)"
+}

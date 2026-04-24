@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 28,
+  "inception_ts": "2026-02-20T00:24:19.512838+00:00",
+  "last_active_ts": "2026-02-20T00:24:19.512863+00:00",
+  "model": "claude-haiku-4-5-20251001",
+  "name": "RusticFox",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "Implementing per-track confidence accumulation for visit proposal gating (td-edge)"
+}

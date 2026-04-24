@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 117,
+  "inception_ts": "2026-04-21T18:36:30.571201+00:00",
+  "last_active_ts": "2026-04-21T18:36:30.571218+00:00",
+  "model": "claude-opus-4-7",
+  "name": "WindyGate",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "td-core worktree-daily-car-count: rebasing on origin, fixing CI (test-unit + test-cucumber) on PR #1020. Coordinating with another agent fixing cucumber."
+}

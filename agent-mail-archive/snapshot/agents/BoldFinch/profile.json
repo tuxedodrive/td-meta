@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 77,
+  "inception_ts": "2026-04-08T03:43:17.084623+00:00",
+  "last_active_ts": "2026-04-08T03:43:17.084645+00:00",
+  "model": "opus-4.6",
+  "name": "BoldFinch",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "td-edge mayor: triage worktrees, clean up orphaned work"
+}

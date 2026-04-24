@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 81,
+  "inception_ts": "2026-04-08T20:02:41.699320+00:00",
+  "last_active_ts": "2026-04-08T20:02:41.699340+00:00",
+  "model": "claude-opus-4-6",
+  "name": "RubyPrairie",
+  "program": "td-core",
+  "project_id": 7,
+  "task_description": "Fixing staging environment: diagnosed missing EdgeUnit camera_config causing silent visit creation failure. Now exploring sighting reprocessing for orphaned sightings (Apr 7-8 gap) and how it relates to Sliding Doors architecture."
+}

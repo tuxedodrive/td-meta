@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 122,
+  "inception_ts": "2026-04-23T17:35:02.388723+00:00",
+  "last_active_ts": "2026-04-23T17:35:02.388740+00:00",
+  "model": "claude-opus-4-7",
+  "name": "GreyBridge",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "td-core on-prem latency fix; need to coordinate with GreyBridge (running make-model branch on metal-pi) and GreenElk (mayor) before deploying outbox flush race fix"
+}

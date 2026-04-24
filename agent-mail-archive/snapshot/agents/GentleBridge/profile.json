@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 46,
+  "inception_ts": "2026-03-28T20:07:28.659229+00:00",
+  "last_active_ts": "2026-03-28T20:07:28.659255+00:00",
+  "model": "claude-opus-4-6",
+  "name": "GentleBridge",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "td-edge: Phase 1 camera-centric refactor deployed, fixing agent-mail cross-repo comms"
+}

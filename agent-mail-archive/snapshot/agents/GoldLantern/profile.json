@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 90,
+  "inception_ts": "2026-04-13T17:16:45.066686+00:00",
+  "last_active_ts": "2026-04-13T17:16:45.066712+00:00",
+  "model": "claude-opus-4-6",
+  "name": "GoldLantern",
+  "program": "td-core",
+  "project_id": 7,
+  "task_description": "Beads cleanup and GitHub cross-reference reconciliation"
+}

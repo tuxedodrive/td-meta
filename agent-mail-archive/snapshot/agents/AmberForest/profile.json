@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 76,
+  "inception_ts": "2026-04-08T03:36:53.708811+00:00",
+  "last_active_ts": "2026-04-08T03:36:53.708824+00:00",
+  "model": "claude-opus-4-6",
+  "name": "AmberForest",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "Designing and implementing sighting sidecar persistence and Sliding Doors runner mode for td-edge"
+}

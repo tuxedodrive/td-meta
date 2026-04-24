@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 68,
+  "inception_ts": "2026-04-07T01:46:19.405620+00:00",
+  "last_active_ts": "2026-04-07T01:46:19.405647+00:00",
+  "model": "claude-opus-4-6",
+  "name": "SunnyDeer",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "Reviewing three P1 bugs from Td_Carl (bd-1le0 targets.yaml, bd-mjvz ZoneConfig, bd-qcag cam2 ALPR 0%). Working in td-edge bughunting worktree."
+}

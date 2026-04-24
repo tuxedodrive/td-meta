@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 45,
+  "inception_ts": "2026-03-28T15:45:40.443889+00:00",
+  "last_active_ts": "2026-03-28T15:45:40.443912+00:00",
+  "model": "claude-opus-4-6",
+  "name": "StormyFalcon",
+  "program": "td-core",
+  "project_id": 7,
+  "task_description": "Fix silent sighting rejection - UUID validation for V2 sighting endpoint"
+}

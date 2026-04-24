@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 124,
+  "inception_ts": "2026-04-23T18:19:57.876864+00:00",
+  "last_active_ts": "2026-04-23T19:48:31.273641+00:00",
+  "model": "opus-4.7",
+  "name": "RusticCat",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "Resumed: coordinating Codex review feedback on PR #1034 (td-core-w7g regression guard) with mayor MistyCrane."
+}

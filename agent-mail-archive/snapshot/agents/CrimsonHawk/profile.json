@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 119,
+  "inception_ts": "2026-04-22T01:40:52.927860+00:00",
+  "last_active_ts": "2026-04-22T01:40:52.927883+00:00",
+  "model": "claude-opus-4-7",
+  "name": "CrimsonHawk",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "Deploy pipeline runner \u2014 landed PRs #1026, #1024, #1025 on td-core main. Checking in with mayor GreenElk."
+}

@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 126,
+  "inception_ts": "2026-04-23T20:12:43.657652+00:00",
+  "last_active_ts": "2026-04-23T20:12:43.657718+00:00",
+  "model": "claude-opus-4-7",
+  "name": "SilentCrane",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "td-core dmv-guard worktree \u2014 on standby"
+}

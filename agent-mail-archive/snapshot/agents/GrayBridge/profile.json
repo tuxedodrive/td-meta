@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 120,
+  "inception_ts": "2026-04-23T17:33:51.232087+00:00",
+  "last_active_ts": "2026-04-23T17:33:51.232110+00:00",
+  "model": "opus-4.7",
+  "name": "GrayBridge",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "Verifying make/model/color surfaces end-to-end on td-core Visits page"
+}

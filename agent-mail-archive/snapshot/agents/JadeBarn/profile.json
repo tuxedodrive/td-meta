@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 118,
+  "inception_ts": "2026-04-22T01:36:04.632755+00:00",
+  "last_active_ts": "2026-04-22T01:36:04.632808+00:00",
+  "model": "opus-4-7",
+  "name": "JadeBarn",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "Washify reconciliation overcount investigation \u2014 filed epic td-core-qd6 + 4 children, seeking coordination guidance from mayor on the ObservationSource finish work"
+}

@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 53,
+  "inception_ts": "2026-04-01T16:57:35.367038+00:00",
+  "last_active_ts": "2026-04-01T16:57:35.367051+00:00",
+  "model": "opus-4.6",
+  "name": "BoldCreek",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "Investigate cam2 ALPR plate read rate gap (55% vs Washify 70%). Confidence threshold tuning, frame rate, zone crop analysis."
+}

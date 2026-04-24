@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 115,
+  "inception_ts": "2026-04-21T17:00:49.377702+00:00",
+  "last_active_ts": "2026-04-23T17:45:32.612163+00:00",
+  "model": "claude-opus-4-7",
+  "name": "MistyCrane",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "td-core mayor (resumed Apr 22): 3 PRs landed (#1024 visits count, #1025 tf1 fallback, #1026 CI-green), w7g td-edge broadcast sent, Jack car-wash test memorialized. Open: WindyGate on #1020, GreenElk w7g regression-test blocked, #1010 Stripe replay output pending."
+}

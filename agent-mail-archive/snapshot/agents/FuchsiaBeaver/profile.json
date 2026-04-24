@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 51,
+  "inception_ts": "2026-03-30T04:39:15.145839+00:00",
+  "last_active_ts": "2026-03-30T04:39:15.145857+00:00",
+  "model": "claude-opus-4-6",
+  "name": "FuchsiaBeaver",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "Implementing make/model classifier training pipeline (Tasks 7-9) in td-training repo"
+}

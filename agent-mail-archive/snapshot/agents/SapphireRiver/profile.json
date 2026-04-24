@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 71,
+  "inception_ts": "2026-04-07T16:16:00.924403+00:00",
+  "last_active_ts": "2026-04-07T16:16:00.924425+00:00",
+  "model": "opus-4.6",
+  "name": "SapphireRiver",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "td-edge performance optimization, camera architecture, coordinating YOLO-once policy across td-edge and td-core agents"
+}

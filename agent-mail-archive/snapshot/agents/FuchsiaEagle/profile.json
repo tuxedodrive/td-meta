@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 87,
+  "inception_ts": "2026-04-11T04:02:45.744033+00:00",
+  "last_active_ts": "2026-04-11T04:02:45.744063+00:00",
+  "model": "claude-opus-4-6",
+  "name": "FuchsiaEagle",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "Coordinating td-core inference doctrine work + td-edge thumbnail bump (overnight session, JPB asleep)"
+}

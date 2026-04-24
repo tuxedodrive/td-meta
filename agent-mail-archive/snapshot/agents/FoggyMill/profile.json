@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 96,
+  "inception_ts": "2026-04-15T15:07:10.015048+00:00",
+  "last_active_ts": "2026-04-15T15:07:10.015070+00:00",
+  "model": "opus",
+  "name": "FoggyMill",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "Building Edge of Tomorrow full-pipeline smoke test for td-core. Video \u2192 td-edge \u2192 td-core \u2192 score visits against ground truth CSV."
+}

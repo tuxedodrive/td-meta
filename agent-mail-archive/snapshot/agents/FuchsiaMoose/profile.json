@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 105,
+  "inception_ts": "2026-04-16T17:17:47.414623+00:00",
+  "last_active_ts": "2026-04-16T17:17:47.414654+00:00",
+  "model": "claude-opus-4-6",
+  "name": "FuchsiaMoose",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "tune-images worktree on td-edge"
+}

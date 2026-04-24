@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 125,
+  "inception_ts": "2026-04-23T18:33:48.732063+00:00",
+  "last_active_ts": "2026-04-23T18:33:48.732088+00:00",
+  "model": "claude-opus-4-7",
+  "name": "GentleCliff",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "Stripe replay operator for GH #1010 \u2014 post completion to td-core-apr21-sweep thread"
+}

@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 107,
+  "inception_ts": "2026-04-16T20:13:10.593736+00:00",
+  "last_active_ts": "2026-04-16T20:13:10.593775+00:00",
+  "model": "claude-opus-4-6",
+  "name": "GentleDune",
+  "program": "Claude Code (td-core brush-retract worktree)",
+  "project_id": 7,
+  "task_description": "Planning top-brush-retraction hazard detection feature in td-core. Need intel on ADR-065 observation-driven lifecycle implementation status, specifically POS-zone plumbing."
+}

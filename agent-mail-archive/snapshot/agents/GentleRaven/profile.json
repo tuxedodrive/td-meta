@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 52,
+  "inception_ts": "2026-03-30T04:45:04.270592+00:00",
+  "last_active_ts": "2026-03-30T04:45:04.270605+00:00",
+  "model": "opus-4.6",
+  "name": "GentleRaven",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "td-meta infrastructure coordination - wiring up reusable workflows and cross-repo concerns"
+}

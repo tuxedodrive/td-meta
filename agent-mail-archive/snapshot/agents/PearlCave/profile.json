@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 55,
+  "inception_ts": "2026-04-02T18:28:35.859858+00:00",
+  "last_active_ts": "2026-04-02T18:28:35.859871+00:00",
+  "model": "claude-opus-4-6",
+  "name": "PearlCave",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "Investigating wash_completed email bug in td-core, checking for ALPR rate messages from td-edge"
+}

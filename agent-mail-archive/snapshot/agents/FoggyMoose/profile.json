@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 108,
+  "inception_ts": "2026-04-16T21:09:09.507726+00:00",
+  "last_active_ts": "2026-04-16T21:09:09.507745+00:00",
+  "model": "claude-opus-4-6",
+  "name": "FoggyMoose",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "td-core washify-sync worktree: hardening Playwright-based Washify report downloader rake task"
+}

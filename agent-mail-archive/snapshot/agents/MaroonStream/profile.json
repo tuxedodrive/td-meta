@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 67,
+  "inception_ts": "2026-04-07T00:18:33.307922+00:00",
+  "last_active_ts": "2026-04-07T00:18:33.307947+00:00",
+  "model": "opus-4.6",
+  "name": "MaroonStream",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "td-edge: real-time AI vehicle detection for Raspberry Pi 5"
+}

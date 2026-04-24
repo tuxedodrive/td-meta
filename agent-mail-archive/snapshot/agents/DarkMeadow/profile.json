@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 69,
+  "inception_ts": "2026-04-07T01:52:47.643606+00:00",
+  "last_active_ts": "2026-04-07T01:52:47.643628+00:00",
+  "model": "claude-opus-4-6",
+  "name": "DarkMeadow",
+  "program": "td-core",
+  "project_id": 7,
+  "task_description": "Visit Pipeline Hardening \u2014 filing td-edge thumbnail bug"
+}

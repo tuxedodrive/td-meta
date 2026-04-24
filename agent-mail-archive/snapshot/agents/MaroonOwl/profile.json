@@ -1,0 +1,11 @@
+{
+  "attachments_policy": "auto",
+  "id": 84,
+  "inception_ts": "2026-04-08T20:21:56.408347+00:00",
+  "last_active_ts": "2026-04-08T20:22:23.022615+00:00",
+  "model": "opus-4.6",
+  "name": "MaroonOwl",
+  "program": "claude-code",
+  "project_id": 7,
+  "task_description": "td-core: sliding doors historical video import"
+}
