@@ -1,0 +1,9 @@
+# Hardcoded TD_EDGE_DEV_API_KEY removed per 2026-04-28 leaked-keys rotation.
+# Dev API key now injected via Doppler dev config.
+#
+# Old file: /etc/systemd/system/td-edge.service.d/dev-api-key.conf
+# Old contents (redacted): Environment=TD_EDGE_DEV_API_KEY=599d51f6...19b7
+#
+# This placeholder exists so the rotation runbook can `sudo rm` the live file
+# and have a sentinel showing the change was intentional. After the rotation
+# is verified, this file can be dropped from td-meta as well.

@@ -1,0 +1,66 @@
+# ABOUTME: Proposed replacement for /etc/systemd/system/td-edge.service on metal-pi.
+# ABOUTME: Reads Doppler service token from EnvironmentFile so it never appears in argv.
+#
+# Rotation rationale (2026-04-28 leaked-keys sweep):
+#
+# The current unit's ExecStart is:
+#   ExecStart=/bin/bash -c 'doppler run --token $(cat /etc/td-edge/doppler-token) -- ...'
+#
+# The $(cat ...) expansion happens at fork time, so the literal Doppler service
+# token ends up in /proc/<pid>/cmdline and is visible to anyone running
+# `ps -eo command` (including agents running shell pipelines on the Pi). The
+# token leaked into a transcript on 2026-04-27 by exactly that path.
+#
+# This unit instead loads the token via EnvironmentFile, which only systemd
+# reads (mode 0600 root:root). `doppler run` honors $DOPPLER_TOKEN from the
+# environment, so we drop the --token flag entirely. The token never appears
+# in argv.
+#
+# Companion changes:
+#   - /etc/td-edge/doppler.env  ->  single line `DOPPLER_TOKEN=<value>`,
+#                                   chmod 0600, owned root:root
+#   - /etc/systemd/system/td-edge.service.d/dev-api-key.conf  ->  DELETED
+#                                   (TD_EDGE_DEV_API_KEY now lives in Doppler
+#                                   dev config, not a hardcoded drop-in)
+#
+# See operational-configs/metal-pi/ROTATION_RUNBOOK.md for paste-and-go steps.
+# See td-core/docs/plans/2026-04-28-leaked-keys-rotation.md for full incident
+# context and the JPB checklist this unit retires Gap A and Gap B from.
+
+[Unit]
+Description=TD-Edge Detection System (Unified Dual-Camera)
+After=network.target
+Documentation=https://github.com/tuxedodrive/td-edge
+
+[Service]
+Type=simple
+User=td-pi
+WorkingDirectory=/home/td-pi/td-edge
+
+# Doppler service token loaded via EnvironmentFile (mode 0600 root:root).
+# `doppler run` reads $DOPPLER_TOKEN from the environment when --token is
+# omitted. The token never appears in argv, so `ps -eo command` cannot leak it.
+EnvironmentFile=/etc/td-edge/doppler.env
+ExecStart=/bin/bash -c 'doppler run -- /home/td-pi/td-edge/venv/bin/td-edge run --api-port 8001'
+
+# Restart policy
+Restart=always
+RestartSec=10
+
+# Logging
+StandardOutput=append:/home/td-pi/td-edge/logs/td-edge.log
+StandardError=append:/home/td-pi/td-edge/logs/td-edge.log
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=read-only
+ProtectSystem=strict
+ReadWritePaths=/home/td-pi/td-edge/logs /home/td-pi/td-edge/data /var/log
+
+# Resource limits
+LimitNOFILE=65536
+MemoryMax=2G
+
+[Install]
+WantedBy=multi-user.target
