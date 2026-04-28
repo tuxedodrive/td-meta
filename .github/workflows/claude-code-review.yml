@@ -1,0 +1,172 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]  # Review on open, reopen, and draft→ready (not every push — saves ~8 min/synchronize)
+    paths-ignore:
+      - '*.md'
+      - 'LICENSE'
+
+jobs:
+  claude-review:
+    # Skip bot PRs and drafts — only review human-authored, ready PRs
+    if: |
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      github.event.pull_request.draft != true
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Get PR diff
+        id: diff
+        run: gh api /repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} -H "Accept: application/vnd.github.v3.diff" > /tmp/pr-diff.txt 2>&1 || true
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Run Claude Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          use_sticky_comment: true
+          show_full_output: true
+          prompt: |
+            Review PR #${{ github.event.pull_request.number }}: "${{ github.event.pull_request.title }}"
+            Branch: ${{ github.event.pull_request.head.ref }} → ${{ github.event.pull_request.base.ref }}
+
+            The PR diff has been pre-fetched to /tmp/pr-diff.txt. Read it via the Read tool.
+
+            ## Review Scope (td-meta metadata & documentation)
+
+            Check for correctness, security, and clarity:
+
+            ### 🚨 Hard Rules (block merge)
+            - **No secrets**: Flag any hardcoded credentials, API keys, tokens, or passwords. All secrets must use env var references.
+            - **Structural integrity**: Verify YAML/JSON/Markdown syntax is valid. Flag broken links, typos in field names, missing required sections.
+            - **Deletion hygiene**: Removing files or sections? Ensure no dangling references elsewhere. Flag orphaned documentation.
+
+            ### 📋 Quality Checks (not blocking, but surface)
+            - **Clarity**: Documentation should be concise and explain the "why", not just the "what". Flag vague descriptions or missing examples.
+            - **Consistency**: Naming conventions, formatting, and structure should match the rest of the repo. Flag inconsistencies.
+            - **Completeness**: If adding a new system or configuration, ensure it's documented end-to-end. Flag incomplete feature documentation.
+
+            FORMAT YOUR REVIEW using GitHub-flavored markdown:
+            - Use ## headers to separate sections (e.g., ## Critical, ## Security, ## Documentation)
+            - Use bullet points for individual findings
+            - Use `inline code` for file names and config keys
+            - Use code blocks with language hints for examples
+            - Order findings by severity (critical → minor)
+            - End with a ## Summary section listing blocking items
+
+            Your text output will be posted as a PR comment. Do NOT post comments manually via gh.
+
+          # No gh access — sandboxed against prompt-injection writes. Diff pre-fetched to /tmp/pr-diff.txt by prior step. No gh pr comment — the action posts automatically.
+          claude_args: '--allowed-tools "Read"'
+
+      # Workaround: use_sticky_comment is broken in agent mode (anthropics/claude-code-action#1108).
+      # Python handles JSON parsing and GitHub API without shell escaping issues.
+      - name: Post review comment
+        if: always() && steps.claude-review.outcome == 'success'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          python3 << 'PYEOF'
+          import json, os, sys, urllib.request, urllib.error
+
+          output_file = "/home/runner/work/_temp/claude-execution-output.json"
+          if not os.path.exists(output_file):
+              print("No execution output file found")
+              sys.exit(0)
+
+          raw = open(output_file).read()
+          print(f"Output file size: {len(raw)} bytes")
+
+          # Extract top-level JSON objects from pretty-printed concatenated output.
+          review = ""
+          depth = 0
+          start = -1
+          in_string = False
+          escaped = False
+          for i, c in enumerate(raw):
+              if escaped:
+                  escaped = False
+                  continue
+              if c == "\\" and in_string:
+                  escaped = True
+                  continue
+              if c == '"':
+                  in_string = not in_string
+                  continue
+              if in_string:
+                  continue
+              if c == "{":
+                  if depth == 0:
+                      start = i
+                  depth += 1
+              elif c == "}":
+                  depth -= 1
+                  if depth == 0 and start >= 0:
+                      chunk = raw[start : i + 1]
+                      try:
+                          obj = json.loads(chunk)
+                          if obj.get("type") == "result" and obj.get("result"):
+                              review = obj["result"]
+                      except json.JSONDecodeError:
+                          pass
+                      start = -1
+
+          if not review:
+              print("No review text found in output")
+              sys.exit(0)
+
+          print(f"Review text length: {len(review)} chars")
+
+          marker = "<!-- claude-code-review -->"
+          body = f"{marker}\n{review}"
+
+          token = os.environ["GITHUB_TOKEN"]
+          repo = os.environ["REPO"]
+          pr = os.environ["PR_NUMBER"]
+          headers = {
+              "Authorization": f"token {token}",
+              "Accept": "application/vnd.github+json",
+              "Content-Type": "application/json",
+          }
+
+          # Check for existing sticky comment.
+          req = urllib.request.Request(
+              f"https://api.github.com/repos/{repo}/issues/{pr}/comments?per_page=100",
+              headers=headers,
+          )
+          comments = json.loads(urllib.request.urlopen(req).read())
+          existing = next((c for c in comments if marker in (c.get("body") or "")), None)
+
+          payload = json.dumps({"body": body}).encode()
+
+          if existing:
+              req = urllib.request.Request(
+                  f"https://api.github.com/repos/{repo}/issues/comments/{existing['id']}",
+                  data=payload, headers=headers, method="PATCH",
+              )
+              urllib.request.urlopen(req)
+              print(f"Updated comment {existing['id']}")
+          else:
+              req = urllib.request.Request(
+                  f"https://api.github.com/repos/{repo}/issues/{pr}/comments",
+                  data=payload, headers=headers, method="POST",
+              )
+              resp = json.loads(urllib.request.urlopen(req).read())
+              print(f"Created comment {resp['id']}")
+          PYEOF
