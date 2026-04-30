@@ -13,9 +13,9 @@ This is the executable planning document for the cross-repo architecture audit. 
 
 - Audit reporting: 7/7 complete
 - P0 remediation stories: 0/5 complete
-- P1 remediation stories: 0/7 complete
+- P1 remediation stories: 1/7 complete
 - P2 remediation stories: 0/6 complete
-- Current phase: AAR-001 and AAR-002 started; repo-side `td-tailor` secret and default credential cleanup pushed to `td-tailor/main`
+- Current phase: AAR-001 and AAR-002 started; AAR-008 completed
 
 ## Completed Audit Milestones
 
@@ -79,7 +79,9 @@ Acceptance criteria:
 
 Repo: `td-core`
 
-Status: Not started
+Status: Complete
+
+Progress note, 2026-04-30: docs, status-page intro, Upptime schedule config, and generated workflow cadence were aligned around 10 checks every 15 minutes. Provider checks are documented as reachability-only, authenticated synthetic checks are explicitly planned separately, and CI now validates service/schedule/artifact drift. Changes were pushed to `td-status/main` in `7ba77c4e`.
 
 User story: As a tenant, I want all reads and writes scoped to my tenant so data cannot cross tenant boundaries.
 
@@ -161,17 +163,19 @@ Acceptance criteria:
 
 Repo: `td-status`
 
-Status: Not started
+Status: Complete
+
+Progress note, 2026-04-30: docs, status-page intro, Upptime schedule config, and generated workflow cadence were aligned around 10 checks every 15 minutes. Provider checks are documented as reachability-only, authenticated synthetic checks are explicitly planned separately, and CI now validates service/schedule/artifact drift. Changes were pushed to `td-status/main` in `7ba77c4e`.
 
 User story: As an operator, I want the status page to report what it actually monitors so service counts, check frequency, and health semantics are trustworthy.
 
 Acceptance criteria:
 
-- [ ] Align README, AGENTS, and `.upptimerc.yml` service counts.
-- [ ] Align `.upptimerc.yml` check schedule with generated workflow cron.
-- [ ] Label unauthenticated provider checks as provider reachability, not integration health.
-- [ ] Add or plan authenticated synthetic checks for critical integrations.
-- [ ] Add a drift check for configured services versus generated history/API/graph artifacts.
+- [x] Align README, AGENTS, and `.upptimerc.yml` service counts.
+- [x] Align `.upptimerc.yml` check schedule with generated workflow cron.
+- [x] Label unauthenticated provider checks as provider reachability, not integration health.
+- [x] Add or plan authenticated synthetic checks for critical integrations.
+- [x] Add a drift check for configured services versus generated history/API/graph artifacts.
 
 ### AAR-009: Add `td-meta` Workflow Validation
 
