@@ -15,7 +15,7 @@ This is the executable planning document for the cross-repo architecture audit. 
 - P0 remediation stories: 0/5 complete
 - P1 remediation stories: 1/7 complete
 - P2 remediation stories: 0/6 complete
-- Current phase: AAR-001 and AAR-002 started; AAR-008 completed
+- Current phase: AAR-001, AAR-002, and AAR-005 started; AAR-008 completed
 
 ## Completed Audit Milestones
 
@@ -79,9 +79,7 @@ Acceptance criteria:
 
 Repo: `td-core`
 
-Status: Complete
-
-Progress note, 2026-04-30: docs, status-page intro, Upptime schedule config, and generated workflow cadence were aligned around 10 checks every 15 minutes. Provider checks are documented as reachability-only, authenticated synthetic checks are explicitly planned separately, and CI now validates service/schedule/artifact drift. Changes were pushed to `td-status/main` in `7ba77c4e`.
+Status: Not started
 
 User story: As a tenant, I want all reads and writes scoped to my tenant so data cannot cross tenant boundaries.
 
@@ -114,17 +112,19 @@ Acceptance criteria:
 
 Repo: `td-edge`
 
-Status: Not started
+Status: In progress
+
+Progress note, 2026-04-30: false-success handling for R2 placeholder uploads and td-core pending command/sequence polling was pushed to `td-edge/main` in `7d431d7b`. Remaining work is the camera/config fallback paths that still hide failures.
 
 User story: As an operator, I want failed sync, camera, config, and command paths to surface explicit degraded state so the system does not appear healthy when work failed.
 
 Acceptance criteria:
 
-- [ ] Stop marking unimplemented R2 uploads as synced.
-- [ ] Replace `return []` on td-core command/sequence API failures with typed degraded-state results or raised domain errors.
+- [x] Stop marking unimplemented R2 uploads as synced.
+- [x] Replace `return []` on td-core command/sequence API failures with typed degraded-state results or raised domain errors.
 - [ ] Replace camera/config fallback paths that hide failures with explicit error states.
-- [ ] Add tests proving API failure is distinguishable from "no work".
-- [ ] Add metrics or logs for degraded states that can be observed in production.
+- [x] Add tests proving API failure is distinguishable from "no work".
+- [x] Add metrics or logs for degraded states that can be observed in production.
 
 ## P1 Stories
 
