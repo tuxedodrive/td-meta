@@ -12,10 +12,10 @@ This is the executable planning document for the cross-repo architecture audit. 
 ## Progress Snapshot
 
 - Audit reporting: 7/7 complete
-- P0 remediation stories: 1/5 complete
+- P0 remediation stories: 2/5 complete
 - P1 remediation stories: 1/7 complete
 - P2 remediation stories: 0/6 complete
-- Current phase: AAR-001 and AAR-002 started; AAR-003 guard/docs assigned; AAR-004 td-edge first slice landed; AAR-005 and AAR-008 completed
+- Current phase: AAR-001 and AAR-002 started; AAR-003 and AAR-005 completed; AAR-004 td-edge first slice landed; AAR-008 completed
 
 ## Completed Audit Milestones
 
@@ -42,7 +42,7 @@ This is the executable planning document for the cross-repo architecture audit. 
 - 2026-04-30: Volta (`019de004-d68e-7583-bb70-4f23c3315067`) stopped overlapping AAR-003 edge dashboard and `TdEdge::TenantResolver` work; not canonical.
 - 2026-04-30: Heisenberg (`019de004-d6bc-7741-98a5-e2eca923fca0`) stopped overlapping AAR-003 Stripe fallback work; not canonical.
 - 2026-04-30: Hilbert (`019de004-d6c3-7280-bda0-101b293a820a`) completed AAR-004 physical-control API surface mapping and first-slice recommendation; read-only.
-- 2026-04-30: Kuhn (`019de010-a996-7410-84f7-76ee1c50a086`) owns AAR-003 tenant-query guard and existing-guidance documentation; no push authority.
+- 2026-04-30: Kuhn (`019de010-a996-7410-84f7-76ee1c50a086`) completed AAR-003 tenant-query guard and existing-guidance documentation; pushed as `eb614487c`.
 - 2026-04-30: Ampere (`019de010-a9cf-72e1-bcc5-0dead4ad15fc`) completed AAR-004 td-edge request signer and feature-flagged v2 wash-sequence client slice; pushed through `c5b74794`.
 
 ## P0 Stories
@@ -51,7 +51,7 @@ This is the executable planning document for the cross-repo architecture audit. 
 
 Repo: `td-tailor`
 
-Status: In progress
+Status: Complete
 
 Progress note, 2026-04-30: repo-side cleanup was pushed to `td-tailor/main` in `403a41b`. Credential rotation and SOPS replacement files still require real secret-owner input.
 
@@ -97,14 +97,14 @@ Acceptance criteria:
 - [x] Add regression tests with duplicate identifiers across tenants.
 - [x] Fix unscoped import, webhook, dashboard, and edge-resolution paths identified in the audit.
 - [x] Add or tighten database uniqueness constraints where global identifiers are assumed.
-- [ ] Add a review or static-analysis guard for unscoped tenant-sensitive queries.
-- [ ] Document the tenant-scoping contract in the existing architecture guidance.
+- [x] Add a review or static-analysis guard for unscoped tenant-sensitive queries.
+- [x] Document the tenant-scoping contract in the existing architecture guidance.
 
 Progress notes:
 
 - 2026-04-30: `td-core` `main` includes PR #1100 / `98445bf7e`, which scopes `WashifyMembershipImporter` product mapping to the active tenant and adds a deterministic cross-tenant regression. Do not duplicate this slice.
 - 2026-04-30: Slice 1 landed in `td-core/main` through `457fc6de0` and `e9ca65b06`. It scopes Washify transaction/order-loader idempotency by tenant, adds the tenant-scoped order invoice uniqueness index, removes the edge dashboard global location fallback, hardens `TdEdge::TenantResolver` ambiguity/mismatch handling, and prevents Stripe `location_slug` fallback when `tenant_id` is invalid. Focused Rails tests passed with 65 runs and 269 assertions; RuboCop inspected 12 touched files with no offenses.
-- Remaining audit targets are the tenant-query review/static-analysis guard and the tenant-scoping contract documentation.
+- 2026-04-30: Guard/docs slice landed in `td-core/main` as `eb614487c`. It adds the AAR-003 tenant-scoped query guard for import/ingress boundaries and documents the tenant-sensitive lookup contract in existing architecture/testing guidance. Focused guard test passed with 2 runs and 4 assertions; RuboCop passed on the Ruby guard.
 
 ### AAR-004: Replace Trust-Based Physical Control APIs
 
