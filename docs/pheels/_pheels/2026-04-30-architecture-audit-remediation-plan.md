@@ -15,7 +15,7 @@ This is the executable planning document for the cross-repo architecture audit. 
 - P0 remediation stories: 1/5 complete
 - P1 remediation stories: 1/7 complete
 - P2 remediation stories: 0/6 complete
-- Current phase: AAR-001 and AAR-002 started; AAR-005 and AAR-008 completed
+- Current phase: AAR-001, AAR-002, and AAR-003 started; AAR-005 and AAR-008 completed
 
 ## Completed Audit Milestones
 
@@ -79,7 +79,7 @@ Acceptance criteria:
 
 Repo: `td-core`
 
-Status: Not started
+Status: In progress
 
 User story: As a tenant, I want all reads and writes scoped to my tenant so data cannot cross tenant boundaries.
 
@@ -90,6 +90,11 @@ Acceptance criteria:
 - [ ] Add or tighten database uniqueness constraints where global identifiers are assumed.
 - [ ] Add a review or static-analysis guard for unscoped tenant-sensitive queries.
 - [ ] Document the tenant-scoping contract in the existing architecture guidance.
+
+Progress notes:
+
+- 2026-04-30: `td-core` `main` includes PR #1100 / `98445bf7e`, which scopes `WashifyMembershipImporter` product mapping to the active tenant and adds a deterministic cross-tenant regression. Do not duplicate this slice.
+- Remaining audit targets include `WashifyTransactionImporter` invoice/customer/visit scoping, edge dashboard fallback, `TdEdge::TenantResolver` contract/uniqueness, Stripe `location_slug` fallback, database constraints for global identifiers, and a tenant-query review/static-analysis guard.
 
 ### AAR-004: Replace Trust-Based Physical Control APIs
 
