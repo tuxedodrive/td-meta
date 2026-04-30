@@ -15,7 +15,7 @@ This is the executable planning document for the cross-repo architecture audit. 
 - P0 remediation stories: 0/5 complete
 - P1 remediation stories: 0/7 complete
 - P2 remediation stories: 0/6 complete
-- Current phase: AAR-001 started; repo-side plaintext env cleanup pushed to `td-tailor/main`
+- Current phase: AAR-001 and AAR-002 started; repo-side `td-tailor` secret and default credential cleanup pushed to `td-tailor/main`
 
 ## Completed Audit Milestones
 
@@ -61,17 +61,19 @@ Acceptance criteria:
 
 Repo: `td-tailor`
 
-Status: Not started
+Status: In progress
+
+Progress note, 2026-04-30: active scripts and docs no longer carry the shared Pi password default. `flash-pi.sh` requires an explicit password hash and `deploy-td-edge.sh` requires an explicit password or injected environment value. Changes were pushed to `td-tailor/main` in `4877371`.
 
 User story: As an operator, I want each edge device to use unique credentials so compromise of one Pi does not compromise the fleet.
 
 Acceptance criteria:
 
-- [ ] Remove hardcoded shared Pi password defaults from active scripts.
-- [ ] Generate or require per-device credentials during imaging.
+- [x] Remove hardcoded shared Pi password defaults from active scripts.
+- [x] Generate or require per-device credentials during imaging.
 - [ ] Store deploy credentials in SOPS, not shell defaults.
-- [ ] Make deployment fail unless credentials are explicit or a declared lab mode is enabled.
-- [ ] Update README/CLAUDE guidance to remove reusable default credentials.
+- [x] Make deployment fail unless credentials are explicit or a declared lab mode is enabled.
+- [x] Update README/CLAUDE guidance to remove reusable default credentials.
 
 ### AAR-003: Harden `td-core` Tenant Isolation
 
