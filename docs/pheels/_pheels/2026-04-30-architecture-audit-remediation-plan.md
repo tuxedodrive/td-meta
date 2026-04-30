@@ -15,7 +15,7 @@ This is the executable planning document for the cross-repo architecture audit. 
 - P0 remediation stories: 1/5 complete
 - P1 remediation stories: 1/7 complete
 - P2 remediation stories: 0/6 complete
-- Current phase: AAR-001 and AAR-002 started; AAR-003 Slice 1 landed; AAR-004 discovery complete; AAR-005 and AAR-008 completed
+- Current phase: AAR-001 and AAR-002 started; AAR-003 guard/docs assigned; AAR-004 td-edge first slice assigned; AAR-005 and AAR-008 completed
 
 ## Completed Audit Milestones
 
@@ -42,6 +42,8 @@ This is the executable planning document for the cross-repo architecture audit. 
 - 2026-04-30: Volta (`019de004-d68e-7583-bb70-4f23c3315067`) stopped overlapping AAR-003 edge dashboard and `TdEdge::TenantResolver` work; not canonical.
 - 2026-04-30: Heisenberg (`019de004-d6bc-7741-98a5-e2eca923fca0`) stopped overlapping AAR-003 Stripe fallback work; not canonical.
 - 2026-04-30: Hilbert (`019de004-d6c3-7280-bda0-101b293a820a`) completed AAR-004 physical-control API surface mapping and first-slice recommendation; read-only.
+- 2026-04-30: Kuhn (`019de010-a996-7410-84f7-76ee1c50a086`) owns AAR-003 tenant-query guard and existing-guidance documentation; no push authority.
+- 2026-04-30: Ampere (`019de010-a9cf-72e1-bcc5-0dead4ad15fc`) owns AAR-004 td-edge request signer and feature-flagged v2 wash-sequence client slice; no push authority.
 
 ## P0 Stories
 
@@ -108,7 +110,7 @@ Progress notes:
 
 Repos: `td-core`, `td-edge`
 
-Status: Discovery complete
+Status: In progress
 
 User story: As an operator, I want physical-control commands to be authenticated, device-scoped, and replay-safe so tenant/site query parameters are not the security boundary.
 
