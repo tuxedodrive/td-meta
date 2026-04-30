@@ -15,7 +15,7 @@ This is the executable planning document for the cross-repo architecture audit. 
 - P0 remediation stories: 2/5 complete
 - P1 remediation stories: 1/7 complete
 - P2 remediation stories: 0/6 complete
-- Current phase: AAR-001 and AAR-002 started; AAR-003 and AAR-005 completed; AAR-004 v2 wash-sequence server and moxa client slices assigned; AAR-008 completed
+- Current phase: AAR-001 and AAR-002 started; AAR-003 and AAR-005 completed; AAR-004 v2 wash-sequence server and moxa client slices landed; core moxa v2 endpoints are next; AAR-008 completed
 
 ## Completed Audit Milestones
 
@@ -44,8 +44,8 @@ This is the executable planning document for the cross-repo architecture audit. 
 - 2026-04-30: Hilbert (`019de004-d6c3-7280-bda0-101b293a820a`) completed AAR-004 physical-control API surface mapping and first-slice recommendation; read-only.
 - 2026-04-30: Kuhn (`019de010-a996-7410-84f7-76ee1c50a086`) completed AAR-003 tenant-query guard and existing-guidance documentation; pushed as `eb614487c`.
 - 2026-04-30: Ampere (`019de010-a9cf-72e1-bcc5-0dead4ad15fc`) completed AAR-004 td-edge request signer and feature-flagged v2 wash-sequence client slice; pushed through `c5b74794`.
-- 2026-04-30: Pauli (`019de02c-5284-7db1-8493-1f001956a93b`) owns AAR-004 `td-core` signed v2 wash-sequence physical-control endpoints; no push authority.
-- 2026-04-30: Planck (`019de02c-52bd-79e3-9082-6e5e15f8ada9`) owns AAR-004 `td-edge` signed v2 moxa client/status behavior; no push authority.
+- 2026-04-30: Pauli (`019de02c-5284-7db1-8493-1f001956a93b`) completed AAR-004 `td-core` signed v2 wash-sequence physical-control endpoints; pushed as `94faa6b21`.
+- 2026-04-30: Planck (`019de02c-52bd-79e3-9082-6e5e15f8ada9`) completed AAR-004 `td-edge` signed v2 moxa client/status behavior; pushed through `53ec25e6`.
 
 ## P0 Stories
 
@@ -90,7 +90,7 @@ Acceptance criteria:
 
 Repo: `td-core`
 
-Status: In progress
+Status: Complete
 
 User story: As a tenant, I want all reads and writes scoped to my tenant so data cannot cross tenant boundaries.
 
@@ -129,6 +129,8 @@ Progress notes:
 
 - 2026-04-30: AAR-004 discovery mapped unauthenticated v1 moxa and wash-sequence endpoints plus active `td-edge` call sites. Recommended first implementation slice is `td-edge` only: add a shared request signer and feature-flagged v2 wash-sequence physical-control client behavior before touching `td-core` v2 routes.
 - 2026-04-30: First td-edge slice landed in `td-edge/main` through `c526d8e` and `c5b74794`. It adds a deterministic HMAC request signer, a disabled-by-default `wash_sequence_v2_api_enabled` flag, and signed v2 wash-sequence client URLs under `/v2/edge/:tenant/:site/:device/physical_controls/wash_sequences`. Focused tests passed with 34 unit tests and Ruff passed on touched files.
+- 2026-04-30: td-edge moxa client slice landed in `td-edge/main` through `b111ff9` and `53ec25e6`. It adds feature-flagged signed v2 moxa physical-control requests, keeps v1 fallback available during migration, and fails fast when signed v2 moxa requests lack an API key. Focused moxa/signer tests passed with 38 tests; Ruff passed on touched files.
+- 2026-04-30: td-core wash-sequence server slice landed in `td-core/main` as `94faa6b21`. It adds signed v2 pending/result endpoints, verifies bearer token plus HMAC signature, checks timestamp/body hash, and rejects replayed nonces. Focused v2 controller tests passed with 8 tests; RuboCop passed on touched files. Remaining AAR-004 work: core moxa v2 endpoints, cross-side contract coverage, and v1 deprecation/blocking after migration.
 
 ### AAR-005: Stop False Success in `td-edge` Sync and Error Paths
 
