@@ -15,7 +15,7 @@ This is the executable planning document for the cross-repo architecture audit. 
 - P0 remediation stories: 1/5 complete
 - P1 remediation stories: 1/7 complete
 - P2 remediation stories: 0/6 complete
-- Current phase: AAR-001, AAR-002, and AAR-003 started; AAR-004 discovery assigned; AAR-005 and AAR-008 completed
+- Current phase: AAR-001 and AAR-002 started; AAR-003 Slice 1 landed; AAR-004 discovery complete; AAR-005 and AAR-008 completed
 
 ## Completed Audit Milestones
 
@@ -38,10 +38,10 @@ This is the executable planning document for the cross-repo architecture audit. 
 
 ## Active Control-Plane Assignments
 
-- 2026-04-30: Epicurus (`019de004-d5f5-7d01-8d09-ca477729b79e`) owns AAR-003 `WashifyTransactionImporter` tenant scoping in `/tmp/td-core-aar003`; no push authority.
-- 2026-04-30: Volta (`019de004-d68e-7583-bb70-4f23c3315067`) owns AAR-003 edge dashboard fallback and `TdEdge::TenantResolver` hardening; no push authority.
-- 2026-04-30: Heisenberg (`019de004-d6bc-7741-98a5-e2eca923fca0`) owns AAR-003 Stripe checkout/webhook `location_slug` fallback hardening; no push authority.
-- 2026-04-30: Hilbert (`019de004-d6c3-7280-bda0-101b293a820a`) owns AAR-004 physical-control API surface mapping and first-slice recommendation; read-only.
+- 2026-04-30: Epicurus (`019de004-d5f5-7d01-8d09-ca477729b79e`) stopped overlapping AAR-003 `WashifyTransactionImporter` work in `/tmp/td-core-aar003`; not canonical.
+- 2026-04-30: Volta (`019de004-d68e-7583-bb70-4f23c3315067`) stopped overlapping AAR-003 edge dashboard and `TdEdge::TenantResolver` work; not canonical.
+- 2026-04-30: Heisenberg (`019de004-d6bc-7741-98a5-e2eca923fca0`) stopped overlapping AAR-003 Stripe fallback work; not canonical.
+- 2026-04-30: Hilbert (`019de004-d6c3-7280-bda0-101b293a820a`) completed AAR-004 physical-control API surface mapping and first-slice recommendation; read-only.
 
 ## P0 Stories
 
@@ -92,22 +92,23 @@ User story: As a tenant, I want all reads and writes scoped to my tenant so data
 
 Acceptance criteria:
 
-- [ ] Add regression tests with duplicate identifiers across tenants.
-- [ ] Fix unscoped import, webhook, dashboard, and edge-resolution paths identified in the audit.
-- [ ] Add or tighten database uniqueness constraints where global identifiers are assumed.
+- [x] Add regression tests with duplicate identifiers across tenants.
+- [x] Fix unscoped import, webhook, dashboard, and edge-resolution paths identified in the audit.
+- [x] Add or tighten database uniqueness constraints where global identifiers are assumed.
 - [ ] Add a review or static-analysis guard for unscoped tenant-sensitive queries.
 - [ ] Document the tenant-scoping contract in the existing architecture guidance.
 
 Progress notes:
 
 - 2026-04-30: `td-core` `main` includes PR #1100 / `98445bf7e`, which scopes `WashifyMembershipImporter` product mapping to the active tenant and adds a deterministic cross-tenant regression. Do not duplicate this slice.
-- Remaining audit targets include `WashifyTransactionImporter` invoice/customer/visit scoping, edge dashboard fallback, `TdEdge::TenantResolver` contract/uniqueness, Stripe `location_slug` fallback, database constraints for global identifiers, and a tenant-query review/static-analysis guard.
+- 2026-04-30: Slice 1 landed in `td-core/main` through `457fc6de0` and `e9ca65b06`. It scopes Washify transaction/order-loader idempotency by tenant, adds the tenant-scoped order invoice uniqueness index, removes the edge dashboard global location fallback, hardens `TdEdge::TenantResolver` ambiguity/mismatch handling, and prevents Stripe `location_slug` fallback when `tenant_id` is invalid. Focused Rails tests passed with 65 runs and 269 assertions; RuboCop inspected 12 touched files with no offenses.
+- Remaining audit targets are the tenant-query review/static-analysis guard and the tenant-scoping contract documentation.
 
 ### AAR-004: Replace Trust-Based Physical Control APIs
 
 Repos: `td-core`, `td-edge`
 
-Status: Discovery assigned
+Status: Discovery complete
 
 User story: As an operator, I want physical-control commands to be authenticated, device-scoped, and replay-safe so tenant/site query parameters are not the security boundary.
 
@@ -119,6 +120,10 @@ Acceptance criteria:
 - [ ] Update `td-edge` clients to use the new contract.
 - [ ] Deprecate or block trust-based v1 physical-control endpoints after migration.
 - [ ] Add contract tests on both sides.
+
+Progress notes:
+
+- 2026-04-30: AAR-004 discovery mapped unauthenticated v1 moxa and wash-sequence endpoints plus active `td-edge` call sites. Recommended first implementation slice is `td-edge` only: add a shared request signer and feature-flagged v2 wash-sequence physical-control client behavior before touching `td-core` v2 routes.
 
 ### AAR-005: Stop False Success in `td-edge` Sync and Error Paths
 
