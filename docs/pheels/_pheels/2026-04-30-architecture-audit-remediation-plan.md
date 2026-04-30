@@ -46,6 +46,7 @@ This is the executable planning document for the cross-repo architecture audit. 
 - 2026-04-30: Ampere (`019de010-a9cf-72e1-bcc5-0dead4ad15fc`) completed AAR-004 td-edge request signer and feature-flagged v2 wash-sequence client slice; pushed through `c5b74794`.
 - 2026-04-30: Pauli (`019de02c-5284-7db1-8493-1f001956a93b`) completed AAR-004 `td-core` signed v2 wash-sequence physical-control endpoints; pushed as `94faa6b21`.
 - 2026-04-30: Planck (`019de02c-52bd-79e3-9082-6e5e15f8ada9`) completed AAR-004 `td-edge` signed v2 moxa client/status behavior; pushed through `53ec25e6`.
+- 2026-04-30: Copernicus (`019de03a-5e76-7450-8923-2d42d960bd79`) owns AAR-004 `td-core` signed v2 moxa physical-control endpoints; no push authority.
 
 ## P0 Stories
 
