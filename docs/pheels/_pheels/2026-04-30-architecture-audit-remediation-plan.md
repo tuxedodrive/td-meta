@@ -12,10 +12,10 @@ This is the executable planning document for the cross-repo architecture audit. 
 ## Progress Snapshot
 
 - Audit reporting: 7/7 complete
-- P0 remediation stories: 2/5 complete
+- P0 remediation stories: 3/5 complete
 - P1 remediation stories: 1/7 complete
 - P2 remediation stories: 0/6 complete
-- Current phase: AAR-001 and AAR-002 started; AAR-003 and AAR-005 completed; AAR-004 v2 wash-sequence and moxa contract/client/server coverage landed; v1 deprecation/blocking is next; AAR-008 completed
+- Current phase: AAR-001 and AAR-002 started; AAR-003, AAR-004, and AAR-005 completed; AAR-008 completed
 
 ## Completed Audit Milestones
 
@@ -113,7 +113,7 @@ Progress notes:
 
 Repos: `td-core`, `td-edge`
 
-Status: In progress
+Status: Complete
 
 User story: As an operator, I want physical-control commands to be authenticated, device-scoped, and replay-safe so tenant/site query parameters are not the security boundary.
 
@@ -123,7 +123,7 @@ Acceptance criteria:
 - [x] Add replay protection or command leasing with idempotency keys.
 - [x] Require device authentication for physical-control command fetch, ack, fail, and status updates.
 - [x] Update `td-edge` clients to use the new contract.
-- [ ] Deprecate or block trust-based v1 physical-control endpoints after migration.
+- [x] Deprecate or block trust-based v1 physical-control endpoints after migration.
 - [x] Add contract tests on both sides.
 
 Progress notes:
@@ -133,6 +133,7 @@ Progress notes:
 - 2026-04-30: td-edge moxa client slice landed in `td-edge/main` through `b111ff9` and `53ec25e6`. It adds feature-flagged signed v2 moxa physical-control requests, keeps v1 fallback available during migration, and fails fast when signed v2 moxa requests lack an API key. Focused moxa/signer tests passed with 38 tests; Ruff passed on touched files.
 - 2026-04-30: td-core wash-sequence server slice landed in `td-core/main` as `94faa6b21`. It adds signed v2 pending/result endpoints, verifies bearer token plus HMAC signature, checks timestamp/body hash, and rejects replayed nonces. Focused v2 controller tests passed with 8 tests; RuboCop passed on touched files. Remaining AAR-004 work: core moxa v2 endpoints, cross-side contract coverage, and v1 deprecation/blocking after migration.
 - 2026-04-30: td-core moxa server slice landed in `td-core/main` as `b152dde98`. It adds signed v2 pending/result/status/system_status endpoints scoped by signed tenant/site/device path, reuses nonce replay protection, and preserves v1 model behavior for command execution and status records. Focused v2 moxa tests passed with 9 tests; wash-sequence regression and RuboCop passed. Remaining AAR-004 work: deprecate or block trust-based v1 physical-control endpoints after migration.
+- 2026-04-30: v1 physical-control deprecation landed in `td-core/main` as `69382d231`. Trust-based moxa and wash-sequence v1 controllers now emit deprecation/replacement headers and warning logs while preserving compatibility for devices that have not yet enabled the feature-flagged v2 clients. Focused v1 controller tests passed with 17 tests; RuboCop passed on touched files.
 
 ### AAR-005: Stop False Success in `td-edge` Sync and Error Paths
 
