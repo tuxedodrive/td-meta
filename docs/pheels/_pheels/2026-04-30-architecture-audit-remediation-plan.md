@@ -15,7 +15,7 @@ This is the executable planning document for the cross-repo architecture audit. 
 - P0 remediation stories: 2/5 complete
 - P1 remediation stories: 1/7 complete
 - P2 remediation stories: 0/6 complete
-- Current phase: AAR-001 and AAR-002 started; AAR-003 and AAR-005 completed; AAR-004 td-edge first slice landed; AAR-008 completed
+- Current phase: AAR-001 and AAR-002 started; AAR-003 and AAR-005 completed; AAR-004 v2 wash-sequence server and moxa client slices assigned; AAR-008 completed
 
 ## Completed Audit Milestones
 
@@ -44,6 +44,8 @@ This is the executable planning document for the cross-repo architecture audit. 
 - 2026-04-30: Hilbert (`019de004-d6c3-7280-bda0-101b293a820a`) completed AAR-004 physical-control API surface mapping and first-slice recommendation; read-only.
 - 2026-04-30: Kuhn (`019de010-a996-7410-84f7-76ee1c50a086`) completed AAR-003 tenant-query guard and existing-guidance documentation; pushed as `eb614487c`.
 - 2026-04-30: Ampere (`019de010-a9cf-72e1-bcc5-0dead4ad15fc`) completed AAR-004 td-edge request signer and feature-flagged v2 wash-sequence client slice; pushed through `c5b74794`.
+- 2026-04-30: Pauli (`019de02c-5284-7db1-8493-1f001956a93b`) owns AAR-004 `td-core` signed v2 wash-sequence physical-control endpoints; no push authority.
+- 2026-04-30: Planck (`019de02c-52bd-79e3-9082-6e5e15f8ada9`) owns AAR-004 `td-edge` signed v2 moxa client/status behavior; no push authority.
 
 ## P0 Stories
 
