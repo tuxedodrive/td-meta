@@ -15,7 +15,7 @@ This is the executable planning document for the cross-repo architecture audit. 
 - P0 remediation stories: 0/5 complete
 - P1 remediation stories: 0/7 complete
 - P2 remediation stories: 0/6 complete
-- Current phase: audit complete, remediation not started
+- Current phase: AAR-001 started; repo-side plaintext env cleanup pushed to `td-tailor/main`
 
 ## Completed Audit Milestones
 
@@ -42,17 +42,19 @@ This is the executable planning document for the cross-repo architecture audit. 
 
 Repo: `td-tailor`
 
-Status: Not started
+Status: In progress
+
+Progress note, 2026-04-30: repo-side cleanup was pushed to `td-tailor/main` in `403a41b`. Credential rotation and SOPS replacement files still require real secret-owner input.
 
 User story: As an operator, I want all committed plaintext fleet secrets removed and rotated so leaked credentials cannot be reused.
 
 Acceptance criteria:
 
 - [ ] Rotate every credential exposed in committed `configs/.env.*` files.
-- [ ] Remove plaintext secret files from the current tree.
-- [ ] Add ignore rules for `.env.*` while preserving `.env.example`.
+- [x] Remove plaintext secret files from the current tree.
+- [x] Add ignore rules for `.env.*` while preserving `.env.example`.
 - [ ] Convert per-site secrets to SOPS-encrypted `secrets.env.enc` files.
-- [ ] Add a secret-scan gate that fails on plaintext API keys, RTSP credentials, R2 keys, and Pi secrets.
+- [x] Add a secret-scan gate that fails on plaintext API keys, RTSP credentials, R2 keys, and Pi secrets.
 - [ ] Add a PHEEL note or runbook entry documenting what was rotated and when, without including secret values.
 
 ### AAR-002: Replace Shared Pi Defaults in `td-tailor`
