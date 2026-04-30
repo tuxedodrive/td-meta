@@ -15,7 +15,7 @@ This is the executable planning document for the cross-repo architecture audit. 
 - P0 remediation stories: 1/5 complete
 - P1 remediation stories: 1/7 complete
 - P2 remediation stories: 0/6 complete
-- Current phase: AAR-001, AAR-002, and AAR-003 started; AAR-005 and AAR-008 completed
+- Current phase: AAR-001, AAR-002, and AAR-003 started; AAR-004 discovery assigned; AAR-005 and AAR-008 completed
 
 ## Completed Audit Milestones
 
@@ -35,6 +35,13 @@ This is the executable planning document for the cross-repo architecture audit. 
 - Prefer one PR or commit series per story unless the story explicitly spans repositories.
 - For security-sensitive stories, rotate credentials before relying on code cleanup.
 - Keep remediation notes in PHEELblog or bead issue comments, not in source comments.
+
+## Active Control-Plane Assignments
+
+- 2026-04-30: Epicurus (`019de004-d5f5-7d01-8d09-ca477729b79e`) owns AAR-003 `WashifyTransactionImporter` tenant scoping in `/tmp/td-core-aar003`; no push authority.
+- 2026-04-30: Volta (`019de004-d68e-7583-bb70-4f23c3315067`) owns AAR-003 edge dashboard fallback and `TdEdge::TenantResolver` hardening; no push authority.
+- 2026-04-30: Heisenberg (`019de004-d6bc-7741-98a5-e2eca923fca0`) owns AAR-003 Stripe checkout/webhook `location_slug` fallback hardening; no push authority.
+- 2026-04-30: Hilbert (`019de004-d6c3-7280-bda0-101b293a820a`) owns AAR-004 physical-control API surface mapping and first-slice recommendation; read-only.
 
 ## P0 Stories
 
@@ -100,7 +107,7 @@ Progress notes:
 
 Repos: `td-core`, `td-edge`
 
-Status: Not started
+Status: Discovery assigned
 
 User story: As an operator, I want physical-control commands to be authenticated, device-scoped, and replay-safe so tenant/site query parameters are not the security boundary.
 
