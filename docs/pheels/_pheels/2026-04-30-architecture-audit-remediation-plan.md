@@ -47,6 +47,9 @@ This is the executable planning document for the cross-repo architecture audit. 
 - 2026-04-30: Pauli (`019de02c-5284-7db1-8493-1f001956a93b`) completed AAR-004 `td-core` signed v2 wash-sequence physical-control endpoints; pushed as `94faa6b21`.
 - 2026-04-30: Planck (`019de02c-52bd-79e3-9082-6e5e15f8ada9`) completed AAR-004 `td-edge` signed v2 moxa client/status behavior; pushed through `53ec25e6`.
 - 2026-04-30: Copernicus (`019de03a-5e76-7450-8923-2d42d960bd79`) completed AAR-004 `td-core` signed v2 moxa physical-control endpoints; pushed as `b152dde98`.
+- 2026-05-01: Bernoulli (`019de4c7-959b-7b71-b86b-8457e843eb0e`) owns AAR-006 `td-edge` td-core router split; no push authority.
+- 2026-05-01: Godel (`019de4c7-964b-7443-988b-dbcd6b2cb00c`) owns AAR-006 `td-edge` CLI split; no push authority.
+- 2026-05-01: Rawls (`019de4c7-9659-7461-be4f-3384156a9b63`) owns AAR-006 `td-edge` ObjectTracker service extraction; no push authority.
 
 ## P0 Stories
 
