@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# ABOUTME: Advisory check for direct posts/puts to deprecated edge sync endpoints.
+# ABOUTME: Emits WARN findings via bin/verdict-write so reviewers see drift without blocking.
+
+set -uo pipefail
+
+FORMULA="lint-sync-endpoint"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+VERDICT_WRITE="${SCRIPT_DIR}/verdict-write"
+STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+PATTERN='requests\.(post|put)\([^)]*(api/v1/edge_data|ingest/)'
+REFERENCE='contracts/edge-sync.md'
+
+usage() {
+  cat >&2 <<EOF
+Usage: lint-sync-endpoint <file> [<file> ...]
+
+Reads file paths from argv, or from \$CLAUDE_FILE_PATHS when argv is empty.
+Flags requests.post / requests.put calls targeting the deprecated edge sync
+endpoints (api/v1/edge_data, ingest/). Advisory only: exit code is always 0
+and verdict status is WARN when findings are present.
+
+Tests/ paths are allowlisted because fixtures legitimately post to these
+endpoints during contract verification.
+
+Exit codes:
+  0  always (advisory)
+  2  usage error
+EOF
+  exit 2
+}
+
+is_allowlisted() {
+  case "$1" in
+    tests/*|*/tests/*|test/*|*/test/*) return 0 ;;
+  esac
+  return 1
+}
+
+paths=("$@")
+if [ "${#paths[@]}" -eq 0 ]; then
+  if [ -n "${CLAUDE_FILE_PATHS:-}" ]; then
+    # shellcheck disable=SC2206
+    paths=(${CLAUDE_FILE_PATHS})
+  else
+    usage
+  fi
+fi
+
+findings='[]'
+
+for path in "${paths[@]}"; do
+  if is_allowlisted "$path"; then
+    continue
+  fi
+  if [ ! -e "$path" ] || [ -d "$path" ]; then
+    continue
+  fi
+  while IFS=: read -r line_no _; do
+    [ -z "$line_no" ] && continue
+    findings=$(jq --arg file "$path" --argjson line "$line_no" --arg ref "$REFERENCE" \
+      '. + [{file: $file, line: $line, rule: "deprecated-sync-endpoint", fix: "use the canonical sync client instead of direct HTTP calls to api/v1/edge_data or ingest/", reference: $ref}]' \
+      <<<"$findings")
+  done < <(grep -nE "$PATTERN" "$path" 2>/dev/null || true)
+done
+
+count="$(jq 'length' <<<"$findings")"
+status="PASSED"
+if [ "$count" -gt 0 ]; then
+  status="WARN"
+fi
+
+argv_str="$FORMULA"
+if [ "${#paths[@]}" -gt 0 ]; then
+  argv_str="$FORMULA ${paths[*]}"
+fi
+
+echo "$findings" | "$VERDICT_WRITE" \
+  --formula "$FORMULA" \
+  --status "$status" \
+  --started-at "$STARTED_AT" \
+  --argv "$argv_str"
+
+exit 0
