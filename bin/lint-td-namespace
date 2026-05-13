@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# ABOUTME: Blocks lingering references to the pre-rename 'tunnelvision' namespace.
+# ABOUTME: Allowlists archives/ and docs/. Emits findings via bin/verdict-write.
+
+set -uo pipefail
+
+FORMULA="lint-td-namespace"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+VERDICT_WRITE="${SCRIPT_DIR}/verdict-write"
+STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+# Match tunnelvision, TunnelVision, TUNNELVISION, Tunnel_Vision, etc.
+PATTERN='[Tt][Uu][Nn][Nn][Ee][Ll][_-]?[Vv][Ii][Ss][Ii][Oo][Nn]'
+
+usage() {
+  cat >&2 <<EOF
+Usage: lint-td-namespace <file> [<file> ...]
+
+Reads file paths from argv, or from \$CLAUDE_FILE_PATHS when argv is empty.
+Flags any reference to the pre-rename 'tunnelvision' namespace (case
+insensitive, optional underscore/hyphen). Paths under archives/ and docs/
+are allowlisted because they legitimately document repo history.
+
+Exit codes:
+  0  no drift
+  1  one or more findings
+  2  usage error
+EOF
+  exit 2
+}
+
+is_allowlisted() {
+  case "$1" in
+    archives/*|*/archives/*|docs/*|*/docs/*) return 0 ;;
+  esac
+  return 1
+}
+
+paths=("$@")
+if [ "${#paths[@]}" -eq 0 ]; then
+  if [ -n "${CLAUDE_FILE_PATHS:-}" ]; then
+    # shellcheck disable=SC2206
+    paths=(${CLAUDE_FILE_PATHS})
+  else
+    usage
+  fi
+fi
+
+findings='[]'
+
+for path in "${paths[@]}"; do
+  if is_allowlisted "$path"; then
+    continue
+  fi
+
+  if [ ! -e "$path" ]; then
+    findings=$(jq --arg file "$path" \
+      '. + [{file: $file, line: 0, rule: "path-not-found", fix: "verify the path exists or remove it from the check list", reference: "AGENTS.md"}]' \
+      <<<"$findings")
+    continue
+  fi
+
+  if [ -d "$path" ]; then
+    continue
+  fi
+
+  while IFS=: read -r line_no _; do
+    [ -z "$line_no" ] && continue
+    findings=$(jq --arg file "$path" --argjson line "$line_no" \
+      '. + [{file: $file, line: $line, rule: "tunnelvision-reference", fix: "rename to the TuxedoDrive / td- namespace", reference: "docs/adr/000-why-td-meta-exists.md"}]' \
+      <<<"$findings")
+  done < <(grep -nE "$PATTERN" "$path" 2>/dev/null || true)
+done
+
+count="$(jq 'length' <<<"$findings")"
+status="PASSED"
+if [ "$count" -gt 0 ]; then
+  status="FAILED"
+fi
+
+argv_str="$FORMULA"
+if [ "${#paths[@]}" -gt 0 ]; then
+  argv_str="$FORMULA ${paths[*]}"
+fi
+
+echo "$findings" | "$VERDICT_WRITE" \
+  --formula "$FORMULA" \
+  --status "$status" \
+  --started-at "$STARTED_AT" \
+  --argv "$argv_str"
+
+if [ "$count" -gt 0 ]; then
+  exit 1
+fi
+exit 0

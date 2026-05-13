@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+# ABOUTME: Enforces that code files start with two ABOUTME: comment lines.
+# ABOUTME: Emits findings via bin/verdict-write so hooks can read tmp/lint-aboutme/.
+
+set -uo pipefail
+
+FORMULA="lint-aboutme"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+VERDICT_WRITE="${SCRIPT_DIR}/verdict-write"
+STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+usage() {
+  cat >&2 <<EOF
+Usage: lint-aboutme <file> [<file> ...]
+
+Reads file paths from argv, or from \$CLAUDE_FILE_PATHS when argv is empty.
+Each code file must have 'ABOUTME: ' as the first non-shebang comment on
+two consecutive lines (lines 1-2, or 2-3 if line 1 is a shebang).
+
+Exit codes:
+  0  all files passed
+  1  one or more findings
+  2  usage error
+EOF
+  exit 2
+}
+
+# Extensions that are considered code files. Everything else is skipped.
+is_code_file() {
+  local path="$1"
+  case "$path" in
+    *.rb|*.py|*.js|*.jsx|*.ts|*.tsx|*.go|*.rs|*.sh|*.bash|*.zsh|*.c|*.cc|*.cpp|*.h|*.hpp|*.java|*.kt|*.swift|*.lua|*.pl|*.pm|*.html|*.htm|*.xml|*.css|*.scss|*.sass|*.less|*.vue|*.svelte) return 0 ;;
+  esac
+  # Treat executable shell scripts with no extension as code files.
+  if [ -x "$path" ] && head -1 "$path" 2>/dev/null | grep -q '^#!'; then
+    return 0
+  fi
+  return 1
+}
+
+# Returns the regex that matches an ABOUTME line for a given path.
+aboutme_pattern_for() {
+  local path="$1"
+  case "$path" in
+    *.html|*.htm|*.xml|*.vue|*.svelte)
+      echo '^[[:space:]]*<!--[[:space:]]*ABOUTME:[[:space:]]'
+      ;;
+    *.css|*.scss|*.sass|*.less|*.c|*.cc|*.cpp|*.h|*.hpp|*.java|*.kt|*.swift|*.js|*.jsx|*.ts|*.tsx|*.go|*.rs)
+      echo '^[[:space:]]*//[[:space:]]*ABOUTME:[[:space:]]'
+      ;;
+    *.lua)
+      echo '^[[:space:]]*--[[:space:]]*ABOUTME:[[:space:]]'
+      ;;
+    *)
+      # Default to # comment style (rb, py, sh, pl, etc.)
+      echo '^[[:space:]]*#[[:space:]]*ABOUTME:[[:space:]]'
+      ;;
+  esac
+}
+
+paths=("$@")
+if [ "${#paths[@]}" -eq 0 ]; then
+  if [ -n "${CLAUDE_FILE_PATHS:-}" ]; then
+    # shellcheck disable=SC2206
+    paths=(${CLAUDE_FILE_PATHS})
+  else
+    usage
+  fi
+fi
+
+findings='[]'
+
+for path in "${paths[@]}"; do
+  if [ ! -e "$path" ]; then
+    findings=$(jq --arg file "$path" \
+      '. + [{file: $file, line: 0, rule: "path-not-found", fix: "verify the path exists or remove it from the check list", reference: "AGENTS.md#aboutme"}]' \
+      <<<"$findings")
+    continue
+  fi
+
+  if ! is_code_file "$path"; then
+    continue
+  fi
+
+  pattern="$(aboutme_pattern_for "$path")"
+  start_line=1
+  first_line="$(sed -n '1p' "$path")"
+  if [[ "$first_line" =~ ^#! ]]; then
+    start_line=2
+  fi
+  end_line=$((start_line + 1))
+
+  line_one="$(sed -n "${start_line}p" "$path")"
+  line_two="$(sed -n "${end_line}p" "$path")"
+
+  one_ok=0
+  two_ok=0
+  if echo "$line_one" | grep -Eq "$pattern"; then one_ok=1; fi
+  if echo "$line_two" | grep -Eq "$pattern"; then two_ok=1; fi
+
+  if [ "$one_ok" -eq 0 ] && [ "$two_ok" -eq 0 ]; then
+    findings=$(jq --arg file "$path" --argjson line "$start_line" \
+      '. + [{file: $file, line: $line, rule: "aboutme-missing", fix: "add two ABOUTME: comment lines as the first non-shebang lines", reference: "AGENTS.md#aboutme"}]' \
+      <<<"$findings")
+  elif [ "$one_ok" -eq 0 ] || [ "$two_ok" -eq 0 ]; then
+    bad_line=$start_line
+    if [ "$one_ok" -eq 1 ]; then bad_line=$end_line; fi
+    findings=$(jq --arg file "$path" --argjson line "$bad_line" \
+      '. + [{file: $file, line: $line, rule: "aboutme-incomplete", fix: "ensure BOTH header lines start with ABOUTME:", reference: "AGENTS.md#aboutme"}]' \
+      <<<"$findings")
+  fi
+done
+
+count="$(jq 'length' <<<"$findings")"
+status="PASSED"
+if [ "$count" -gt 0 ]; then
+  status="FAILED"
+fi
+
+argv_str="$FORMULA"
+if [ "${#paths[@]}" -gt 0 ]; then
+  argv_str="$FORMULA ${paths[*]}"
+fi
+
+echo "$findings" | "$VERDICT_WRITE" \
+  --formula "$FORMULA" \
+  --status "$status" \
+  --started-at "$STARTED_AT" \
+  --argv "$argv_str"
+
+if [ "$count" -gt 0 ]; then
+  exit 1
+fi
+exit 0

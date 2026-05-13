@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# ABOUTME: Shared helper that lint formulas call to emit structured verdict files.
+# ABOUTME: Writes tmp/<formula>/{LAST_STATUS,<run-id>.json,<run-id>.md} with provenance.
+
+set -euo pipefail
+
+SCHEMA_VERSION=1
+
+usage() {
+  cat >&2 <<EOF
+Usage: verdict-write --formula <name> --status PASSED|FAILED|WARN --started-at <iso8601> [--argv <string>]
+
+Reads an optional JSON array of findings from stdin. Each finding is an object with
+fields: file, line, rule, fix, reference. Unknown fields are preserved.
+
+Writes:
+  tmp/<formula>/LAST_STATUS         one-line status
+  tmp/<formula>/<run-id>.json       structured verdict (schema_version: ${SCHEMA_VERSION})
+  tmp/<formula>/<run-id>.md         human-readable summary
+EOF
+  exit 2
+}
+
+formula=""
+status=""
+started_at=""
+argv_str=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --formula)     formula="${2:-}"; shift 2 ;;
+    --status)      status="${2:-}"; shift 2 ;;
+    --started-at)  started_at="${2:-}"; shift 2 ;;
+    --argv)        argv_str="${2:-}"; shift 2 ;;
+    -h|--help)     usage ;;
+    *) echo "verdict-write: unknown argument: $1" >&2; usage ;;
+  esac
+done
+
+[ -n "$formula" ]    || { echo "verdict-write: --formula is required" >&2; usage; }
+[ -n "$status" ]     || { echo "verdict-write: --status is required" >&2; usage; }
+[ -n "$started_at" ] || { echo "verdict-write: --started-at is required" >&2; usage; }
+
+case "$status" in
+  PASSED|FAILED|WARN) ;;
+  *) echo "verdict-write: --status must be one of PASSED, FAILED, WARN (got: $status)" >&2; exit 2 ;;
+esac
+
+findings_json="[]"
+if [ ! -t 0 ]; then
+  stdin_raw="$(cat)"
+  if [ -n "$stdin_raw" ]; then
+    if ! echo "$stdin_raw" | jq -e 'type == "array"' >/dev/null 2>&1; then
+      echo "verdict-write: stdin must be a JSON array of findings" >&2
+      exit 2
+    fi
+    findings_json="$stdin_raw"
+  fi
+fi
+
+git_sha="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
+
+if [ -z "$argv_str" ]; then
+  argv_str="$formula"
+fi
+command_hash="$(printf '%s' "$argv_str" | shasum -a 256 | awk '{print $1}')"
+
+run_finished_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+run_id="${run_finished_at}-$$"
+
+out_dir="tmp/${formula}"
+mkdir -p "$out_dir"
+
+json_path="${out_dir}/${run_id}.json"
+md_path="${out_dir}/${run_id}.md"
+status_path="${out_dir}/LAST_STATUS"
+
+jq -n \
+  --argjson schema_version "$SCHEMA_VERSION" \
+  --arg command "$formula" \
+  --arg argv "$argv_str" \
+  --arg git_sha "$git_sha" \
+  --arg command_hash "$command_hash" \
+  --arg run_started_at "$started_at" \
+  --arg run_finished_at "$run_finished_at" \
+  --arg status "$status" \
+  --argjson findings "$findings_json" \
+  '{
+    schema_version: $schema_version,
+    command: $command,
+    argv: $argv,
+    git_sha: $git_sha,
+    command_hash: $command_hash,
+    run_started_at: $run_started_at,
+    run_finished_at: $run_finished_at,
+    status: $status,
+    findings: $findings
+  }' > "$json_path"
+
+finding_count="$(jq 'length' <<<"$findings_json")"
+
+{
+  echo "# Verdict: ${formula}"
+  echo
+  echo "- Status: **${status}**"
+  echo "- Run started: ${started_at}"
+  echo "- Run finished: ${run_finished_at}"
+  echo "- Git SHA: ${git_sha}"
+  echo "- Command hash: ${command_hash}"
+  echo "- Findings: ${finding_count}"
+  if [ "$finding_count" -gt 0 ]; then
+    echo
+    echo "## Findings"
+    echo
+    jq -r '.[] | "- " + (.file // "?") + ":" + ((.line // 0)|tostring) + " — " + (.rule // "?") + (if .fix then " (fix: " + .fix + ")" else "" end) + (if .reference then " [ref: " + .reference + "]" else "" end)' <<<"$findings_json"
+  fi
+} > "$md_path"
+
+printf '%s\n' "$status" > "$status_path"

@@ -21,6 +21,9 @@ Thumbs.db
 # Worktrees
 .worktrees/
 
+# Verdict files written by bin/verdict-write
+tmp/
+
 # Beads / Dolt files (added by bd init)
 .dolt/
 *.db
