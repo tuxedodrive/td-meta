@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# ABOUTME: Catches references to retired multi-record sync APIs and pre-rename secret names.
+# ABOUTME: FAILED for the APIs; WARN for the secret names; emits findings via bin/verdict-write.
+
+set -uo pipefail
+
+FORMULA="lint-deprecated-edge-sync"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+VERDICT_WRITE="${SCRIPT_DIR}/verdict-write"
+STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+API_PATTERN='sync_(visits|detections)_multi'
+SECRET_PATTERN='pi_(key|secret)'
+
+usage() {
+  cat >&2 <<EOF
+Usage: lint-deprecated-edge-sync <file> [<file> ...]
+
+Reads file paths from argv, or from \$CLAUDE_FILE_PATHS when argv is empty.
+
+Two rule families:
+  - retired-sync-api    sync_visits_multi / sync_detections_multi   → FAILED
+  - retired-secret-name pi_key / pi_secret                          → WARN
+
+Paths under tests/ and db/migrate/ are allowlisted: tests legitimately
+reference legacy fixtures; migrations are historical artifacts.
+
+Exit codes:
+  0  PASSED or WARN
+  1  FAILED (any retired-sync-api finding)
+  2  usage error
+EOF
+  exit 2
+}
+
+is_allowlisted() {
+  case "$1" in
+    tests/*|*/tests/*|test/*|*/test/*) return 0 ;;
+    db/migrate/*|*/db/migrate/*) return 0 ;;
+  esac
+  return 1
+}
+
+paths=("$@")
+if [ "${#paths[@]}" -eq 0 ]; then
+  if [ -n "${CLAUDE_FILE_PATHS:-}" ]; then
+    # shellcheck disable=SC2206
+    paths=(${CLAUDE_FILE_PATHS})
+  else
+    usage
+  fi
+fi
+
+findings='[]'
+has_api_finding=0
+has_secret_finding=0
+
+for path in "${paths[@]}"; do
+  if is_allowlisted "$path"; then
+    continue
+  fi
+  if [ ! -e "$path" ] || [ -d "$path" ]; then
+    continue
+  fi
+
+  while IFS=: read -r line_no _; do
+    [ -z "$line_no" ] && continue
+    has_api_finding=1
+    findings=$(jq --arg file "$path" --argjson line "$line_no" \
+      '. + [{file: $file, line: $line, rule: "retired-sync-api", fix: "use the canonical single-record sync API instead of the retired multi-record variants", reference: "contracts/edge-sync.md"}]' \
+      <<<"$findings")
+  done < <(grep -nE "$API_PATTERN" "$path" 2>/dev/null || true)
+
+  while IFS=: read -r line_no _; do
+    [ -z "$line_no" ] && continue
+    has_secret_finding=1
+    findings=$(jq --arg file "$path" --argjson line "$line_no" \
+      '. + [{file: $file, line: $line, rule: "retired-secret-name", fix: "rename pi_key/pi_secret to the current device-credential naming convention", reference: "AGENTS.md"}]' \
+      <<<"$findings")
+  done < <(grep -nE "$SECRET_PATTERN" "$path" 2>/dev/null || true)
+done
+
+status="PASSED"
+exit_code=0
+if [ "$has_api_finding" -eq 1 ]; then
+  status="FAILED"
+  exit_code=1
+elif [ "$has_secret_finding" -eq 1 ]; then
+  status="WARN"
+fi
+
+argv_str="$FORMULA"
+if [ "${#paths[@]}" -gt 0 ]; then
+  argv_str="$FORMULA ${paths[*]}"
+fi
+
+echo "$findings" | "$VERDICT_WRITE" \
+  --formula "$FORMULA" \
+  --status "$status" \
+  --started-at "$STARTED_AT" \
+  --argv "$argv_str"
+
+exit "$exit_code"
