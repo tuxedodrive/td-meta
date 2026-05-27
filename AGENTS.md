@@ -17,6 +17,8 @@ This repository contains cross-repository infrastructure for TuxedoDrive. Change
 
 5. **Agent Worktrees by Default**: Agents doing feature work use git worktrees by default. See `docs/policies/agent-worktrees.md` for the cross-repo policy, including the Claude symlink strategy, Codex helper workflow, and Gas City `.gc/worktrees` exception.
 
+6. **td-meta Consumption Model**: Shared assets must declare how consuming repos use them: link/reference, remote call, vendor, or generate. See `docs/policies/td-meta-consumption.md`.
+
 ## Working with Cross-Repo ADRs
 
 When creating cross-repo ADRs:

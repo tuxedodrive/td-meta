@@ -51,6 +51,13 @@ through an optional `.claude/worktrees -> ../.worktrees` symlink, gives Codex a
 shared helper path, and carves out Gas City-managed `.gc/worktrees` as a
 separate orchestrated system.
 
+## Consumption Model
+
+The rules for using td-meta assets from consuming repos live in
+`docs/policies/td-meta-consumption.md`. Shared assets should be classified as
+link/reference, remote call, vendor, or generate so td-meta remains the source of
+truth without forcing every repo to copy everything.
+
 
 🌌🌌🌌🌌 How do I use td-meta?
 =============================
