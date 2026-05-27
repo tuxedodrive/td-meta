@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+# ABOUTME: Shared helper for creating repo-local agent git worktrees.
+# ABOUTME: Supports Codex/ad hoc agents and guarded Claude worktree symlink migration.
+
+set -euo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage:
+  scripts/agent-worktree create <slug> [base]
+  scripts/agent-worktree codex <slug> [base]
+  scripts/agent-worktree status
+  scripts/agent-worktree migrate-symlink
+
+Defaults:
+  base: origin/main
+  worktree root: .worktrees
+
+Notes:
+  Claude users should keep using: claude --worktree <slug>
+  Codex users should use:        scripts/agent-worktree codex <slug>
+  Gas City worktrees under .gc/worktrees are managed by Gas City, not this helper.
+USAGE
+}
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+command="${1:-}"
+case "$command" in
+  create|codex)
+    slug="${2:-}"
+    base="${3:-origin/main}"
+
+    if [[ -z "$slug" || "$slug" == -* || "$slug" == *"/"* || "$slug" == *".."* ]]; then
+      echo "error: slug must be a simple path segment, for example: tdc-64i" >&2
+      exit 2
+    fi
+
+    mkdir -p .worktrees
+    path=".worktrees/$slug"
+    branch="agent/$slug"
+
+    if [[ -e "$path" ]]; then
+      echo "error: $path already exists" >&2
+      exit 1
+    fi
+
+    git fetch origin main
+    git worktree add -b "$branch" "$path" "$base"
+
+    if [[ "$command" == "codex" ]]; then
+      echo "Created $path"
+      echo "Run: codex --cd $path"
+    else
+      echo "Created $path on $branch"
+    fi
+    ;;
+
+  status)
+    echo "Worktree root:"
+    if [[ -L .worktrees ]]; then
+      printf '  .worktrees -> %s\n' "$(readlink .worktrees)"
+    elif [[ -d .worktrees ]]; then
+      echo "  .worktrees/"
+    else
+      echo "  .worktrees/ missing"
+    fi
+
+    echo
+    echo "Claude worktree path:"
+    if [[ -L .claude/worktrees ]]; then
+      printf '  .claude/worktrees -> %s\n' "$(readlink .claude/worktrees)"
+    elif [[ -d .claude/worktrees ]]; then
+      echo "  .claude/worktrees/"
+    else
+      echo "  .claude/worktrees missing"
+    fi
+
+    echo
+    git worktree list
+    ;;
+
+  migrate-symlink)
+    if [[ ! -d .claude ]]; then
+      mkdir -p .claude
+    fi
+
+    if [[ -L .claude/worktrees ]]; then
+      echo ".claude/worktrees is already a symlink"
+      exit 0
+    fi
+
+    active_claude_worktrees="$(
+      git worktree list --porcelain |
+        awk '/^worktree / { print substr($0, 10) }' |
+        grep -E '/\.claude/worktrees(/|$)' || true
+    )"
+
+    if [[ -n "$active_claude_worktrees" ]]; then
+      echo "error: active git worktrees still live under .claude/worktrees:" >&2
+      echo "$active_claude_worktrees" >&2
+      echo "Remove or migrate them with git worktree commands before flipping the symlink." >&2
+      exit 1
+    fi
+
+    if [[ -e .claude/worktrees && -n "$(find .claude/worktrees -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]]; then
+      echo "error: .claude/worktrees is not empty" >&2
+      exit 1
+    fi
+
+    if [[ -L .worktrees && "$(readlink .worktrees)" == ".claude/worktrees" ]]; then
+      rm .worktrees
+      mkdir -p .worktrees
+    else
+      mkdir -p .worktrees
+    fi
+
+    rm -rf .claude/worktrees
+    ln -s ../.worktrees .claude/worktrees
+
+    echo "Linked .claude/worktrees -> ../.worktrees"
+    ;;
+
+  ""|-h|--help|help)
+    usage
+    ;;
+
+  *)
+    echo "error: unknown command: $command" >&2
+    usage >&2
+    exit 2
+    ;;
+esac

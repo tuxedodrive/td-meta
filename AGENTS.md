@@ -15,6 +15,8 @@ This repository contains cross-repository infrastructure for TuxedoDrive. Change
 
 4. **Immutable ADRs**: Cross-repo ADRs follow the same immutability rules as repo-specific ADRs.
 
+5. **Agent Worktrees by Default**: Agents doing feature work use git worktrees by default. See `docs/policies/agent-worktrees.md` for the cross-repo policy, including the Claude symlink strategy, Codex helper workflow, and Gas City `.gc/worktrees` exception.
+
 ## Working with Cross-Repo ADRs
 
 When creating cross-repo ADRs:

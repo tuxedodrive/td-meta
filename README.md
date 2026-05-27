@@ -42,6 +42,15 @@ Shared API contracts and schemas that multiple repositories depend on (when appr
 
 Standard templates for ADRs, PHEELs, and other documentation to maintain consistency across repositories.
 
+## Agent Worktree Policy
+
+The cross-repo policy for AI-agent feature work lives in
+`docs/policies/agent-worktrees.md`. It defines `.worktrees/<slug>` as the
+normal repo-local destination, keeps `claude --worktree <slug>` plain vanilla
+through an optional `.claude/worktrees -> ../.worktrees` symlink, gives Codex a
+shared helper path, and carves out Gas City-managed `.gc/worktrees` as a
+separate orchestrated system.
+
 
 🌌🌌🌌🌌 How do I use td-meta?
 =============================
@@ -82,7 +91,9 @@ td-meta/
 │   └── workflows/        # Reusable GitHub Actions workflows
 ├── docs/
 │   ├── adr/             # Cross-repository ADRs
+│   ├── policies/        # Cross-repository operational policies
 │   └── templates/       # Documentation templates
+├── scripts/             # Shared helper scripts for consuming repos
 ├── contracts/           # Shared API contracts (when centralized)
 └── README.md
 ```
