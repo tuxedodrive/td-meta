@@ -54,9 +54,10 @@
 # - github.repo
 
 sync.remote: "git+ssh://git@github.com/tuxedodrive/td-meta.git"
-issue-prefix: tm
+issue-prefix: tdm
 dolt.auto-start: false
 gc.endpoint_origin: inherited_city
 gc.endpoint_status: verified
-issue_prefix: tm
+issue_prefix: tdm
 types.custom: molecule,convoy,message,event,gate,merge-request,agent,role,rig,session,spec,convergence
+export.auto: false
