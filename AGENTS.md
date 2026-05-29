@@ -5,6 +5,59 @@ ABOUTME: This file establishes practices for maintaining cross-repository infras
 
 This repository contains cross-repository infrastructure for TuxedoDrive. Changes here can affect multiple repositories, so extra care is required.
 
+## TuxedoDrive Platform Root
+
+This file is also the versioned Claude entrypoint for sessions started from the
+unversioned workspace container at `/Users/jpb/workspace/tuxedodrive`.
+
+The container directory should stay disposable and should not own durable
+instructions. Do not require a real `CLAUDE.md` at the workspace root. If a
+local root shim exists, it should only point to `td-meta/AGENTS.md`.
+
+### Sibling Repositories
+
+- `td-core/` - Rails application for customer portals, operator UI, owner
+  dashboards, billing, memberships, ingestion, and reporting.
+- `td-edge/` - On-prem Python pipeline for ALPR, detection, camera handling,
+  device services, and sighting emission.
+- `td-tailor/` - Provisioning and fleet management for on-prem devices.
+- `td-training/` - Model training and AI datasets that ship to TD customers.
+- `td-meta/` - Cross-repo operational docs, contracts, ADRs, and workspace
+  instructions.
+- `td-status/` - Status and monitoring site.
+- `operator-android-app/` - Operator Android client.
+- `operator-ios-app/` - Operator iOS client.
+
+Each sibling must have an `AGENTS.md`. `CLAUDE.md`, when present, should only
+delegate to `AGENTS.md`; durable guidance belongs in `AGENTS.md`.
+
+Enforce this locally with:
+
+```bash
+td-meta/scripts/check-agent-docs.sh /Users/jpb/workspace/tuxedodrive
+```
+
+### When to Work From the Parent
+
+Use `/Users/jpb/workspace/tuxedodrive` for work that needs more than one
+repository in view:
+
+- td-edge to td-core API or payload contract changes.
+- Device or incident investigations that cross on-prem and cloud code.
+- Repo-wide search across TuxedoDrive projects.
+- Cross-repo docs, operational policy, or coordination updates.
+
+For single-repo implementation work, `cd` into that repository and follow its
+local instructions. For td-core code-writing, use an isolated worktree instead
+of mutating the canonical checkout.
+
+### Agent Mail
+
+Use `/Users/jpb/workspace` as the agent-mail `project_key`.
+
+This stays deliberately broader than the TuxedoDrive container so TD agents can
+coordinate with non-TD utility repos when needed.
+
 ## Core Principles
 
 1. **Coordination Required**: Changes to reusable workflows or cross-repo ADRs may impact multiple repositories. Always consider the blast radius.
