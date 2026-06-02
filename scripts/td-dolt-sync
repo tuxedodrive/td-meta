@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+# ABOUTME: Pulls + pushes Dolt-backed beads for every td-* repo under TD_REPOS_ROOT.
+# ABOUTME: Idempotent. Safe to call from launchd, cron, shell hooks, or by hand.
+
+set -euo pipefail
+
+TD_REPOS_ROOT="${TD_REPOS_ROOT:-$HOME/workspace/tuxedodrive}"
+TD_DOLT_SYNC_MODE="${TD_DOLT_SYNC_MODE:-pull}"   # pull | push | both
+TD_DOLT_SYNC_LOG="${TD_DOLT_SYNC_LOG:-$HOME/Library/Logs/td-dolt-sync.log}"
+
+log() {
+  printf '%s [td-dolt-sync] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*" >> "$TD_DOLT_SYNC_LOG"
+}
+
+ensure_bd() {
+  if ! command -v bd >/dev/null 2>&1; then
+    log "ERROR: bd not on PATH (TD_REPOS_ROOT=$TD_REPOS_ROOT)"
+    exit 0   # exit clean so launchd does not flag us as failed
+  fi
+}
+
+is_canonical_repo() {
+  # Worktrees have .git as a FILE; canonical clones have .git as a DIR.
+  local repo="$1"
+  [ -d "$repo/.git" ]
+}
+
+has_dolt_remote() {
+  local repo="$1"
+  local out
+  out="$(cd "$repo" && bd dolt remote list 2>/dev/null)" || return 1
+  echo "$out" | grep -qi "No remotes" && return 1
+  [ -n "$out" ]
+}
+
+sync_one() {
+  local repo="$1"
+  local name
+  name="$(basename "$repo")"
+
+  if [ ! -d "$repo/.beads" ] || [ ! -f "$repo/.beads/metadata.json" ]; then
+    return 0
+  fi
+
+  if ! is_canonical_repo "$repo"; then
+    log "$name: skip (worktree, not canonical clone)"
+    return 0
+  fi
+
+  log "$name: start"
+
+  local started_here=0
+  if ! (cd "$repo" && bd dolt status 2>/dev/null | grep -q "running"); then
+    if ! (cd "$repo" && bd dolt start >/dev/null 2>&1); then
+      log "$name: dolt start failed, skipping"
+      return 0
+    fi
+    started_here=1
+  fi
+
+  if ! has_dolt_remote "$repo"; then
+    log "$name: skip (no dolt remote configured)"
+    if [ "$started_here" -eq 1 ]; then
+      (cd "$repo" && bd dolt stop >/dev/null 2>&1) || true
+    fi
+    return 0
+  fi
+
+  case "$TD_DOLT_SYNC_MODE" in
+    pull|both)
+      if (cd "$repo" && bd dolt pull 2>&1 | tee -a "$TD_DOLT_SYNC_LOG" | grep -q "Pull complete"); then
+        log "$name: pull ok"
+      else
+        log "$name: pull failed"
+      fi
+      ;;
+  esac
+
+  case "$TD_DOLT_SYNC_MODE" in
+    push|both)
+      if (cd "$repo" && bd dolt push 2>&1 | tee -a "$TD_DOLT_SYNC_LOG" | grep -q "Push complete"); then
+        log "$name: push ok"
+      else
+        log "$name: push failed"
+      fi
+      ;;
+  esac
+
+  if [ "$started_here" -eq 1 ]; then
+    (cd "$repo" && bd dolt stop >/dev/null 2>&1) || true
+  fi
+}
+
+main() {
+  mkdir -p "$(dirname "$TD_DOLT_SYNC_LOG")"
+  ensure_bd
+
+  if [ ! -d "$TD_REPOS_ROOT" ]; then
+    log "TD_REPOS_ROOT=$TD_REPOS_ROOT does not exist; nothing to sync"
+    exit 0
+  fi
+
+  for repo in "$TD_REPOS_ROOT"/td-*; do
+    [ -d "$repo" ] && sync_one "$repo"
+  done
+}
+
+main "$@"
