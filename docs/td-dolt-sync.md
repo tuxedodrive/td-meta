@@ -37,10 +37,12 @@ Defaults:
 
 ```bash
 cd ~/workspace/tuxedodrive/td-meta
-scripts/install-td-dolt-sync
+scripts/setup.sh
 ```
 
-That is it. The agent runs once immediately, then every 5 minutes. Survives reboot.
+That is it. `setup.sh` is the single entry point for all td-meta setup — today it installs the dolt-sync launchd agent, tomorrow it may do more. The agent runs once immediately, then every 5 minutes. Survives reboot.
+
+(Under the hood, `setup.sh` calls `scripts/install-td-dolt-sync`. You can still invoke that directly if you want to.)
 
 ## Verify
 
