@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# ABOUTME: Installs the td-dolt-sync launchd agent so beads stay in sync across machines.
+# ABOUTME: Idempotent — running twice is safe; uninstall with scripts/uninstall-td-dolt-sync.
+
+set -euo pipefail
+
+LABEL="com.tuxedodrive.td-dolt-sync"
+PLIST_PATH="$HOME/Library/LaunchAgents/$LABEL.plist"
+INTERVAL_SECONDS="${TD_DOLT_SYNC_INTERVAL:-300}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_PATH="$SCRIPT_DIR/td-dolt-sync"
+MODE="${TD_DOLT_SYNC_MODE:-pull}"
+LOG_PATH="${TD_DOLT_SYNC_LOG:-$HOME/Library/Logs/td-dolt-sync.log}"
+
+if [ ! -x "$SCRIPT_PATH" ]; then
+  chmod +x "$SCRIPT_PATH"
+fi
+
+PATH_LINE="$(/usr/bin/env -i /bin/zsh -lc 'echo $PATH' 2>/dev/null || echo "$PATH")"
+if ! echo "$PATH_LINE" | grep -q "$(dirname "$(command -v bd 2>/dev/null || echo /usr/local/bin/bd)")"; then
+  PATH_LINE="$(command -v bd 2>/dev/null | xargs dirname 2>/dev/null):$PATH_LINE"
+fi
+
+mkdir -p "$(dirname "$PLIST_PATH")"
+mkdir -p "$(dirname "$LOG_PATH")"
+
+cat > "$PLIST_PATH" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>$LABEL</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>$SCRIPT_PATH</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string>$PATH_LINE</string>
+    <key>TD_REPOS_ROOT</key><string>${TD_REPOS_ROOT:-$HOME/workspace/tuxedodrive}</string>
+    <key>TD_DOLT_SYNC_MODE</key><string>$MODE</string>
+    <key>TD_DOLT_SYNC_LOG</key><string>$LOG_PATH</string>
+  </dict>
+  <key>StartInterval</key><integer>$INTERVAL_SECONDS</integer>
+  <key>RunAtLoad</key><true/>
+  <key>StandardOutPath</key><string>$LOG_PATH</string>
+  <key>StandardErrorPath</key><string>$LOG_PATH</string>
+</dict>
+</plist>
+PLIST
+
+launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
+launchctl bootstrap "gui/$(id -u)" "$PLIST_PATH"
+launchctl enable "gui/$(id -u)/$LABEL"
+launchctl kickstart -k "gui/$(id -u)/$LABEL"
+
+echo "Installed launchd agent: $LABEL"
+echo "  plist:    $PLIST_PATH"
+echo "  script:   $SCRIPT_PATH"
+echo "  interval: ${INTERVAL_SECONDS}s"
+echo "  mode:     $MODE"
+echo "  log:      $LOG_PATH"
+echo ""
+echo "Override with env vars: TD_REPOS_ROOT, TD_DOLT_SYNC_MODE (pull|push|both), TD_DOLT_SYNC_INTERVAL, TD_DOLT_SYNC_LOG"
+echo "Tail the log:    tail -f $LOG_PATH"
+echo "Stop + remove:   scripts/uninstall-td-dolt-sync"
